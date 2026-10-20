@@ -27,10 +27,31 @@ Bookmark that address. That's your app.
 
 ## Turn on the AI tutor
 
+In **Settings**, pick an AI service. You can switch at any time.
+
+### Free: Groq (recommended to start)
+
+1. Go to https://console.groq.com/keys and sign up.
+2. Click **Create API Key**, give it a name like `kladde`, and copy the key. It starts with `gsk_`.
+3. Open your Kladde site, click **Settings**, choose **Groq**, paste the key and click **Save**.
+
+Groq's free plan allows roughly 1,000 requests a day. Long notes and files are shortened before they're sent. Groq can't read photos with the default model, so upload PDF, Word or PowerPoint files instead.
+
+### Free: OpenRouter
+
+1. Go to https://openrouter.ai/settings/keys, sign up and create a key. It starts with `sk-or-`.
+2. In Kladde **Settings**, choose **OpenRouter**, paste the key, click **Check key and list models**, pick a model, and click **Save**.
+
+Free models allow about 50 requests a day (more if you've ever bought $10 of credit).
+
+### Paid: Claude (best quality)
+
 1. Go to https://console.anthropic.com and sign in or sign up. This is separate from your normal Claude subscription.
 2. Click **Billing** and add some credit (for example $5). Each AI action usually costs well under one cent with Sonnet, less with Haiku.
 3. Click **API keys**, then **Create key**. Give it a name like `kladde` and copy the key. It starts with `sk-ant-`.
-4. Open your Kladde site, click **Settings**, paste the key into **API key** and click **Save**.
+4. Open your Kladde site, click **Settings**, choose **Claude**, paste the key into **API key** and click **Save**.
+
+Claude reads PDFs (including scans) and photos directly and handles long files.
 
 If your key ever leaks, delete it in the Anthropic Console and make a new one.
 

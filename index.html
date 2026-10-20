@@ -221,7 +221,7 @@ button { cursor: pointer; }
 <body>
 
 <header class="top">
-  <div class="brand"><h1>Kladde<span class="dot">.</span></h1><span>Danish study notebook with a Claude tutor</span></div>
+  <div class="brand"><h1>Kladde<span class="dot">.</span></h1><span>Danish study notebook with an AI tutor</span></div>
   <label class="level" for="level">Level
     <select id="level">
       <option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option>
@@ -233,19 +233,24 @@ button { cursor: pointer; }
 <div class="sheet-bg" id="settings" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Settings</h2>
-    <h3>Claude connection</h3>
-    <p>The AI features need a Claude API key. Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (you'll need to add some credit there). Your key is saved only in this browser on this device and is sent only to Anthropic. Don't use this app with your key on a shared computer.</p>
-    <label for="apiKey">API key
-      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-    </label>
-    <label for="model">Model
-      <select id="model">
-        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (best balance)</option>
-        <option value="claude-haiku-5-5">Claude Haiku 5.5 (faster and cheaper)</option>
-        <option value="claude-opus-5-5">Claude Opus 5.5 (smartest, costs most)</option>
+    <h3>AI connection</h3>
+    <label for="provider">AI service
+      <select id="provider">
+        <option value="groq">Groq (free, about 1,000 requests a day)</option>
+        <option value="openrouter">OpenRouter (free models, 50 requests a day)</option>
+        <option value="claude">Claude by Anthropic (paid, best quality)</option>
       </select>
     </label>
-    <div class="row"><button class="btn primary" id="saveKey">Save</button><button class="btn" id="forgetKey">Remove key</button><span class="note-msg" id="keyMsg"></span></div>
+    <p id="provHelp"></p>
+    <label for="apiKey">API key
+      <input type="password" id="apiKey" autocomplete="off" spellcheck="false">
+    </label>
+    <label for="model">Model
+      <select id="model"></select>
+    </label>
+    <div class="row"><button class="btn primary" id="saveKey">Save</button><button class="btn" id="loadModels">Check key and list models</button><button class="btn" id="forgetKey">Remove key</button></div>
+    <p class="note-msg" id="keyMsg"></p>
+    <p>Your key is saved only in this browser on this device and is sent only to the AI service you picked. Don't use the app with your key on a shared computer. Free services may have their own privacy terms, so avoid putting private information in your notes.</p>
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
@@ -304,7 +309,7 @@ button { cursor: pointer; }
         <div class="card" id="genCard" hidden>
           <div class="card-head"><h3>Empty note</h3></div>
           <div class="gen">
-            <label for="genTopic">Ask Claude to build a lesson for you. What should it be about?</label>
+            <label for="genTopic">Ask the AI to build a lesson for you. What should it be about?</label>
             <div class="row">
               <input id="genTopic" placeholder="e.g. Past tense of common verbs">
               <button class="btn primary ai" id="btnGen">Build lesson</button>
@@ -312,7 +317,7 @@ button { cursor: pointer; }
             <div class="chips" id="genChips"></div>
             <div class="note-msg" id="genMsg"></div>
             <div class="drop" id="dropZone">
-              <p><b>Or build it from your class material.</b> Upload a PDF, PowerPoint, Word file, photo of a worksheet or a text file. Claude reads it and turns it into a lesson note. If you typed a topic above, Claude will focus on that.</p>
+              <p><b>Or build it from your class material.</b> Upload a PDF, PowerPoint, Word file, photo of a worksheet or a text file. The AI reads it and turns it into a lesson note. If you typed a topic above, it will focus on that.</p>
               <div class="row"><button class="btn sea ai" id="btnUpload" type="button">Upload a file</button><span class="note-msg">or drop it here · up to 10 MB</span></div>
             </div>
           </div>
@@ -347,7 +352,7 @@ button { cursor: pointer; }
   <section class="pane tutor" aria-label="Tutor">
     <div class="tutor-head">
       <div class="avatar">L</div>
-      <div><b>Lærer</b><small>Your Danish tutor, powered by Claude</small></div>
+      <div><b>Lærer</b><small>Your Danish tutor</small></div>
       <button class="btn small" id="clearChat">New chat</button>
     </div>
     <div class="chat" id="chat"></div>
@@ -422,13 +427,89 @@ button { cursor: pointer; }
   }
 
   // ---------- Claude API (direct from the browser) ----------
-  const getKey = () => lsGet("kladde-key") || "";
-  const getModel = () => lsGet("kladde-model") || "claude-sonnet-5-5";
+  // The AI services the app can use. "budget" is how much note/file text is sent at once.
+  const PROVIDERS = {
+    groq: {
+      keyName: "kladde-key-groq", keyPrefix: "gsk_", url: "https://api.groq.com/openai/v1",
+      models: ["openai/gpt-oss-120b"], budget: 6000, maxOut: 3000,
+      help: 'Free. Sign up at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>, click <b>Create API Key</b> and copy it (it starts with gsk_). Free accounts have daily limits, and long files are shortened.',
+    },
+    openrouter: {
+      keyName: "kladde-key-openrouter", keyPrefix: "sk-or-", url: "https://openrouter.ai/api/v1",
+      models: [], free: true, budget: 8000, maxOut: 4000,
+      help: 'Sign up at <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> and create a key (it starts with sk-or-). Paste it, click <b>Check key and list models</b>, then pick a free model. 50 free requests a day.',
+    },
+    claude: {
+      keyName: "kladde-key", keyPrefix: "sk-ant-",
+      models: ["claude-sonnet-5-5", "claude-haiku-5-5", "claude-opus-5-5"], budget: 12000, maxOut: 8000,
+      help: 'Paid, best quality for Danish, and reads PDFs and photos directly. Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> and add some credit there.',
+    },
+  };
+  const provider = () => { const p = lsGet("kladde-provider"); return PROVIDERS[p] ? p : (lsGet("kladde-key") ? "claude" : "groq"); };
+  const P = () => PROVIDERS[provider()];
+  const getKey = () => lsGet(P().keyName) || "";
+  const getModel = () => lsGet("kladde-model-" + provider()) || (provider() === "claude" ? lsGet("kladde-model") : "") || P().models[0] || "";
+
+  // Free services (Groq, OpenRouter) use the OpenAI-style chat format
+  async function callOpenAI(messages, opts, key) {
+    const p = P(), model = getModel();
+    if (!model) throw { code: "no_model" };
+    if (opts.attachments?.length) {
+      const last = messages[messages.length - 1];
+      last.content = [{ type: "text", text: last.content },
+        ...opts.attachments.filter((a) => a.type === "image").map((a) => ({ type: "image_url", image_url: { url: `data:${a.source.media_type};base64,${a.source.data}` } }))];
+    }
+    let res;
+    try {
+      res = await fetch(p.url + "/chat/completions", {
+        method: "POST", signal: opts.signal,
+        headers: { "content-type": "application/json", authorization: "Bearer " + key },
+        body: JSON.stringify({ model, messages, stream: true, max_tokens: Math.min(opts.maxTokens || 4000, p.maxOut) }),
+      });
+    } catch (e) { throw { code: e?.name === "AbortError" ? "cancelled" : "network" }; }
+    if (!res.ok) {
+      let detail = ""; try { const j = await res.json(); detail = j?.error?.message || JSON.stringify(j?.error || ""); } catch {}
+      const code = res.status === 401 ? "bad_key" : res.status === 402 ? "no_credit" : res.status === 429 ? "rate_limited"
+        : res.status === 404 ? "bad_model" : res.status === 413 || /context|too long|too large|maximum.*tokens|tokens per minute/i.test(detail) ? (res.status === 429 ? "rate_limited" : "too_big")
+        : /image|vision|multimodal/i.test(detail) ? "no_vision" : "upstream_error";
+      throw { code, message: detail };
+    }
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = "", text = "", stop = null;
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n")) !== -1) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+          if (!line.startsWith("data:")) continue;
+          const data = line.slice(5).trim();
+          if (data === "[DONE]") continue;
+          let ev; try { ev = JSON.parse(data); } catch { continue; }
+          if (ev.error) throw { code: /image|vision/i.test(ev.error.message || "") ? "no_vision" : "upstream_error", text, message: ev.error.message };
+          const ch = ev.choices?.[0];
+          const piece = ch?.delta?.content;
+          if (piece) { text += piece; opts.onText?.({ text, delta: piece }); }
+          if (ch?.finish_reason) stop = ch.finish_reason;
+        }
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") throw { code: "cancelled", text };
+      if (e?.code) throw e;
+      throw { code: "network", text };
+    }
+    if (!text.trim()) throw { code: "empty_completion" };
+    return { text, truncated: stop === "length" };
+  }
+
   function apiSample() {
     async function call(input, opts = {}) {
       const key = getKey();
       if (!key) throw { code: "no_key" };
       const messages = typeof input === "string" ? [{ role: "user", content: input }] : mergeTurns(input);
+      if (provider() !== "claude") return callOpenAI(messages, opts, key);
       // Files (PDFs, images) go in front of the text of the last message
       if (opts.attachments?.length) {
         const last = messages[messages.length - 1];
@@ -680,19 +761,22 @@ button { cursor: pointer; }
   function errCopy(e) {
     switch (e?.code) {
       case "cancelled": return "";
-      case "no_key": openSettings(); return "Add your Claude API key in Settings first.";
-      case "bad_key": return "Claude didn't accept your API key. Check it in Settings.";
-      case "forbidden": return "Your API key isn't allowed to do this. Check your Anthropic Console account.";
-      case "no_credit": return "Your Anthropic account is out of credit. Add credit at console.anthropic.com.";
-      case "bad_model": return "That model isn't available on your account. Pick another one in Settings.";
-      case "overloaded": return "Claude is very busy right now. Try again in a minute.";
-      case "network": return "Couldn't reach Claude. Check your internet connection.";
-      case "rate_limited": return "You've sent a lot of requests in a short time. Wait a minute, then try again.";
-      case "refused": return "Claude declined that request. Try rewording it.";
+      case "no_key": openSettings(); return "Connect an AI service in Settings first.";
+      case "no_model": openSettings(); return "Pick a model in Settings first.";
+      case "bad_key": return "The AI service didn't accept your API key. Check it in Settings.";
+      case "forbidden": return "Your API key isn't allowed to do this. Check your account with the AI service.";
+      case "no_credit": return "This needs credit on your AI account. Pick a free model in Settings, or add credit.";
+      case "bad_model": return "That model isn't available. Pick another one in Settings.";
+      case "no_vision": return "This AI model can't read photos. Upload a PDF, Word or PowerPoint file instead, or switch to Claude in Settings.";
+      case "too_big": return "That's too much text for this AI service in one go. Try a shorter file, or select less text.";
+      case "overloaded": return "The AI service is very busy right now. Try again in a minute.";
+      case "network": return "Couldn't reach the AI service. Check your internet connection.";
+      case "rate_limited": return "You've hit the free limit for now. Wait a minute and try again. If it keeps happening, you've used today's free requests.";
+      case "refused": return "The AI declined that request. Try rewording it.";
       case "prompt_too_large": return "This note is too long to send in one go. Select a smaller part and try again.";
-      case "invalid_json": return "Claude's answer came back in an unexpected shape. Press the button again.";
-      case "empty_completion": return "Claude didn't write anything. Try asking for less at once.";
-      default: return "Couldn't reach Claude. Check your connection and try again.";
+      case "invalid_json": return "The AI's answer came back in an unexpected shape. Press the button again.";
+      case "empty_completion": return "The AI didn't write anything. Try asking for less at once.";
+      default: return "Couldn't reach the AI service. Check your connection and try again.";
     }
   }
   function aiOff(msg) {
@@ -701,7 +785,7 @@ button { cursor: pointer; }
     $("#quick").querySelectorAll("button").forEach((b) => (b.disabled = true));
     if (msg) banner(msg);
   }
-  const noteText = () => editor.innerText.trim().slice(0, 12000);
+  const noteText = () => editor.innerText.trim().slice(0, P().budget);
   const noteTitle = () => titleIn.value.trim() || "Untitled note";
 
   function card(title, bodyHtml) {
@@ -867,12 +951,37 @@ button { cursor: pointer; }
     const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.88));
     return { type: "image", source: { type: "base64", media_type: "image/jpeg", data: toBase64(await blob.arrayBuffer()) } };
   }
-  // Turns a file into either text or a block Claude can read directly
+  // Reads the text out of a PDF (used for the free AI services, which can't read PDFs themselves)
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement("script"); s.src = src; s.onload = res;
+      s.onerror = () => rej({ msg: "Couldn't load the PDF reader. Check your internet connection and try again." });
+      document.head.appendChild(s);
+    });
+  }
+  async function pdfText(file) {
+    if (!window.pdfjsLib) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const out = [];
+    for (let i = 1; i <= Math.min(pdf.numPages, 60); i++) {
+      const tc = await (await pdf.getPage(i)).getTextContent();
+      out.push(`--- Page ${i} ---\n` + tc.items.map((it) => it.str + (it.hasEOL ? "\n" : " ")).join(""));
+    }
+    const text = out.join("\n\n");
+    if (!text.replace(/--- Page \d+ ---/g, "").trim()) throw { msg: "This PDF is a scan with no text in it. Take a photo of it instead, or switch to Claude in Settings, which can read scans." };
+    return text;
+  }
+  // Turns a file into either text or a block the AI can read directly
   async function readFile(file) {
     const name = file.name.toLowerCase();
     if (file.size > MAX_FILE) throw { msg: "That file is bigger than 10 MB. Try a smaller file, or split it up." };
-    if (name.endsWith(".pdf") || file.type === "application/pdf")
+    if (name.endsWith(".pdf") || file.type === "application/pdf") {
+      if (provider() !== "claude") return { text: await pdfText(file) };
       return { attachments: [{ type: "document", source: { type: "base64", media_type: "application/pdf", data: toBase64(await file.arrayBuffer()) } }] };
+    }
     if (file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/.test(name))
       return { attachments: [await imageBlock(file)] };
     if (name.endsWith(".txt") || name.endsWith(".md") || file.type.startsWith("text/"))
@@ -914,7 +1023,9 @@ button { cursor: pointer; }
     try {
       const got = await readFile(file);
       if (got.text !== undefined && !got.text.trim()) throw { msg: "Couldn't find any text in this file. If it's a scan, take a photo or save it as PDF instead." };
-      say("Claude is reading your material and writing the lesson note. This can take a minute...");
+      const budget = P().budget, cut = !!got.text && got.text.length > budget;
+      if (got.text) got.text = got.text.slice(0, budget);
+      say("Reading your material and writing the lesson note. This can take a minute...");
       const focus = $("#genTopic").value.trim();
       const appending = !!editor.innerText.trim();
       const L = await sample.json(
@@ -937,10 +1048,11 @@ button { cursor: pointer; }
       }
       $("#genTopic").value = "";
       updateGenCard(); scheduleSave();
+      const cutNote = cut ? " The file was long, so only the first part was used. Claude (in Settings) can read longer files." : "";
       if (Array.isArray(L.vocab) && L.vocab.length) {
-        body.innerHTML = `<p class="note-msg" style="color:var(--ok)">Lesson note ${appending ? "added at the end of this note" : "written"}. Here are the key words from the material:</p><div class="vp"></div>`;
+        body.innerHTML = `<p class="note-msg" style="color:var(--ok)">Lesson note ${appending ? "added at the end of this note" : "written"}.${esc(cutNote)} Here are the key words from the material:</p><div class="vp"></div>`;
         vocabPicker(body.querySelector(".vp"), L.vocab);
-      } else say(`Lesson note ${appending ? "added at the end of this note" : "written"}.`);
+      } else say(`Lesson note ${appending ? "added at the end of this note" : "written"}.${cutNote}`);
     } catch (e) {
       say(e?.msg || (e?.code ? errCopy(e) : "") || "Couldn't read that file. Try saving it as a PDF and uploading that instead.", true);
     } finally { fileBusy = false; }
@@ -1012,7 +1124,7 @@ button { cursor: pointer; }
     chatCtl = new AbortController();
     $("#chatSend").hidden = true; $("#chatStop").hidden = false;
     try {
-      const { text: answer, truncated } = await sample([{ role: "user", content: rules() }, ...t.slice(-16)], {
+      const { text: answer, truncated } = await sample([{ role: "user", content: rules() }, ...t.slice(provider() === "claude" ? -16 : -8)], {
         cache: false, signal: chatCtl.signal,
         onText: ({ text }) => { bubble.className = "msg ai"; bubble.innerHTML = md(text); box.scrollTop = box.scrollHeight; },
       });
@@ -1045,10 +1157,50 @@ button { cursor: pointer; }
 
   // ---------- boot ----------
   // ---------- settings ----------
+  function setModelOptions(list, selected) {
+    const all = [...new Set([...(list || []), ...(selected ? [selected] : [])])];
+    $("#model").innerHTML = all.length
+      ? all.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("")
+      : '<option value="">Click "Check key and list models" first</option>';
+    if (selected) $("#model").value = selected;
+  }
+  function fillSettings() {
+    const pv = $("#provider").value, p = PROVIDERS[pv];
+    $("#provHelp").innerHTML = p.help;
+    $("#apiKey").value = lsGet(p.keyName) || "";
+    $("#apiKey").placeholder = p.keyPrefix + "...";
+    const saved = lsGet("kladde-model-" + pv) || (pv === "claude" ? lsGet("kladde-model") : "") || p.models[0] || "";
+    let cached = []; try { cached = JSON.parse(lsGet("kladde-models-" + pv) || "[]"); } catch {}
+    setModelOptions(cached.length ? cached : p.models, saved);
+    $("#keyMsg").textContent = "";
+  }
   function openSettings() {
-    $("#apiKey").value = getKey(); $("#model").value = getModel(); $("#keyMsg").textContent = ""; $("#backupMsg").textContent = "";
+    $("#provider").value = provider(); fillSettings();
+    $("#backupMsg").textContent = "";
     $("#settings").hidden = false; $("#apiKey").focus();
   }
+  $("#provider").onchange = fillSettings;
+  $("#loadModels").onclick = async () => {
+    const pv = $("#provider").value, p = PROVIDERS[pv], key = $("#apiKey").value.trim(), msg = $("#keyMsg");
+    if (!key) { msg.textContent = "Paste your key first."; return; }
+    if (pv === "claude") { msg.textContent = "Claude models are already listed."; return; }
+    msg.textContent = "Checking...";
+    try {
+      const r = await fetch(p.url + "/models", { headers: { authorization: "Bearer " + key } });
+      if (r.status === 401) { msg.textContent = "That key wasn't accepted. Check that you copied all of it."; return; }
+      if (!r.ok) { msg.textContent = "Couldn't get the model list. Try again in a moment."; return; }
+      const data = (await r.json())?.data || [];
+      let ids = data.map((m) => String(m.id));
+      if (pv === "openrouter") ids = ids.filter((id) => id.endsWith(":free"));
+      else ids = ids.filter((id) => !/whisper|tts|guard|playai|orpheus|distil/i.test(id));
+      ids.sort();
+      if (!ids.length) { msg.textContent = "Your key works, but no free models were found right now."; return; }
+      lsSet("kladde-models-" + pv, JSON.stringify(ids));
+      const keep = $("#model").value && ids.includes($("#model").value) ? $("#model").value : (p.models.find((m) => ids.includes(m)) || ids[0]);
+      setModelOptions(ids, keep);
+      msg.textContent = `Your key works. Found ${ids.length} model${ids.length > 1 ? "s" : ""}. Pick one and click Save.`;
+    } catch { msg.textContent = "Couldn't reach the service. Check your internet connection."; }
+  };
   function closeSettings() { $("#settings").hidden = true; }
   function aiOnFn() {
     aiOn = true; banner("");
@@ -1060,17 +1212,19 @@ button { cursor: pointer; }
   $("#settings").addEventListener("click", (e) => { if (e.target.id === "settings") closeSettings(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#settings").hidden) closeSettings(); });
   $("#saveKey").onclick = () => {
-    const k = $("#apiKey").value.trim();
-    lsSet("kladde-model", $("#model").value);
-    if (!k) { $("#keyMsg").textContent = "Paste your key first."; return; }
-    if (!k.startsWith("sk-ant-")) { $("#keyMsg").textContent = "That doesn't look like a Claude key. It should start with sk-ant-"; return; }
-    lsSet("kladde-key", k);
-    $("#keyMsg").textContent = "Saved."; aiOnFn();
+    const pv = $("#provider").value, p = PROVIDERS[pv], k = $("#apiKey").value.trim(), model = $("#model").value, msg = $("#keyMsg");
+    if (!k) { msg.textContent = "Paste your key first."; return; }
+    if (!k.startsWith(p.keyPrefix)) { msg.textContent = `That doesn't look like the right key. It should start with ${p.keyPrefix}`; return; }
+    lsSet(p.keyName, k); lsSet("kladde-provider", pv);
+    if (model) lsSet("kladde-model-" + pv, model);
+    if (!model) { msg.textContent = 'Key saved. Now click "Check key and list models" and pick a model.'; aiOff(); return; }
+    msg.textContent = "Saved. You're ready to go."; aiOnFn();
   };
   $("#forgetKey").onclick = () => {
-    try { localStorage.removeItem("kladde-key"); } catch {}
+    const pv = $("#provider").value;
+    try { localStorage.removeItem(PROVIDERS[pv].keyName); } catch {}
     $("#apiKey").value = ""; $("#keyMsg").textContent = "Key removed from this browser.";
-    aiOff("Add your Claude API key in Settings to turn on the AI tutor.");
+    if (pv === provider()) aiOff("Connect an AI service in Settings to turn on the tutor.");
   };
   $("#exportBtn").onclick = () => {
     const blob = new Blob([JSON.stringify(store.exportAll(), null, 2)], { type: "application/json" });
@@ -1108,7 +1262,7 @@ button { cursor: pointer; }
     }
     store.watchNotes(onNotes);
     store.watchVocab((list) => { vocab = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); renderVocab(); });
-    if (getKey()) aiOnFn(); else aiOff("Welcome! Open Settings and add your Claude API key to turn on the AI tutor. Your notes work without it.");
+    if (getKey() && getModel()) aiOnFn(); else aiOff("Welcome! Open Settings and connect an AI service to turn on the tutor. Groq is free. Your notes work without it.");
   }
   boot();
 })();
