@@ -304,7 +304,7 @@ button { cursor: pointer; }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.8</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.9</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="banner" id="banner" hidden></div>
@@ -1328,7 +1328,7 @@ button { cursor: pointer; }
     if (ex.type !== "place" || provider() === "claude") return 0;
     if (all) ex.items.forEach((it) => it.chips.forEach((c) => { c.rule = false; delete c.ruleWhy; }));
     const need = ex.items.map((_, i) => i).filter((i) => needsRules(ex.items[i]));
-    if (!need.length) return 0;
+    if (!need.length) { ex.rulesChecked = true; return 0; }
     let res;
     try {
       res = await sample.json(
@@ -1349,6 +1349,7 @@ button { cursor: pointer; }
       finishItem(ex.items[i]);
       fixed++;
     }
+    if (fixed) ex.rulesChecked = true;
     return fixed;
   }
 
@@ -1450,6 +1451,26 @@ button { cursor: pointer; }
     }
     renderExList();
   }
+  // Older exercises get their answer key checked once, automatically
+  const fixing = new Map();
+  function autoFix(ex) {
+    if (ex.type !== "place" || provider() === "claude" || ex.rulesChecked || !aiOn) return null;
+    if (fixing.has(ex.id)) return fixing.get(ex.id);
+    const p = (async () => {
+      setStatus("Checking answer key...");
+      try {
+        await ensureRules(ex, true);
+        ex.items.forEach(finishItem);
+        await store.saveExercise(ex.id, ex, true);
+        setStatus(ex.rulesChecked ? "Answer key checked" : "", ex.rulesChecked ? "ok" : "");
+        if (currentEx?.id === ex.id) { renderExercise(); renderExList(); }
+      } finally { fixing.delete(ex.id); }
+    })();
+    fixing.set(ex.id, p);
+    return p;
+  }
+  const waitForFix = async () => { if (currentEx && fixing.has(currentEx.id)) await fixing.get(currentEx.id); };
+
   async function openExercise(id) {
     if (currentId && dirty) await flushSave();
     const ex = exercises.find((e) => e.id === id); if (!ex) return;
@@ -1458,6 +1479,7 @@ button { cursor: pointer; }
     resetExDelete(); renderPage(); renderExercise(); renderExList(); renderNoteList(); renderChat();
     $("#exBody").scrollTop = 0;
     setView("page");
+    autoFix(ex);
   }
   function newExercise() {
     pageMode = "newEx"; currentEx = null;
@@ -1634,7 +1656,7 @@ button { cursor: pointer; }
     const act = e.target.closest("[data-act]");
     if (act) {
       const i = +act.dataset.i;
-      if (act.dataset.act === "show") showAnswer(i);
+      if (act.dataset.act === "show") waitForFix().then(() => showAnswer(i));
       else if (act.dataset.act === "ask") askAboutItem(i);
       else if (act.dataset.act === "bank") {
         // Put the word in the box you were last in, or else the first empty box
@@ -1681,13 +1703,14 @@ button { cursor: pointer; }
     }
   });
 
-  $("#exCheck").onclick = () => { if (!currentEx) return; currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
-  $("#exShowAll").onclick = () => { if (!currentEx) return; currentEx.items.forEach((_, i) => (currentEx.state.shown[i] = true)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exCheck").onclick = async () => { await waitForFix(); if (!currentEx) return; currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exShowAll").onclick = async () => { await waitForFix(); if (!currentEx) return; currentEx.items.forEach((_, i) => (currentEx.state.shown[i] = true)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
   $("#exFix").onclick = async () => {
     const ex = currentEx; if (!ex) return;
     if (!aiOn) { openSettings(); return; }
     const btn = $("#exFix"); btn.disabled = true; btn.textContent = "Checking...";
     try {
+      await waitForFix();
       const n = await ensureRules(ex, true);
       ex.items.forEach(finishItem);
       saveEx(true); renderExercise(); renderExList();
@@ -1731,7 +1754,7 @@ button { cursor: pointer; }
   async function saveNewExercise(raw, fallbackTitle, msgEl) {
     const ex = buildExercise(raw, fallbackTitle);
     if (!ex.items.length) throw { msg: "Couldn't find any sentences to practise in that. Check that the exercise sentences are included, then try again." };
-    if (ex.items.some(needsRules)) { msgEl.textContent = "Checking the answers with the Danish word-order rules..."; await ensureRules(ex); }
+    if (ex.type === "place" && provider() !== "claude") { msgEl.textContent = "Checking the answers with the Danish word-order rules..."; await ensureRules(ex, true); }
     ex.id = "x" + newId().slice(1); ex.createdAt = ex.updatedAt = Date.now();
     await store.saveExercise(ex.id, ex);
     msgEl.textContent = "";
