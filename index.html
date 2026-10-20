@@ -325,6 +325,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; border: 1px solid currentColo
 .opt:hover:not(:disabled) { border-color: var(--sea); }
 .opt.ok { border-color: var(--ok); background: var(--ok-soft); }
 .opt.bad { border-color: var(--accent); background: var(--accent-soft); }
+.opt.picked { border-color: var(--sea); background: var(--sea-soft); }
 .timer { font-family: var(--f-mono); font-size: 16px; font-variant-numeric: tabular-nums; color: var(--sea); }
 .due-tag { grid-column: 1; font-size: 11px; font-family: var(--f-mono); color: var(--muted); }
 .due-tag.d { color: var(--accent); } .due-tag.m { color: var(--ok); }
@@ -405,7 +406,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.15</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.16</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="sheet-bg" id="profiles" hidden>
@@ -476,7 +477,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
               <li><b>Notes:</b> write your lesson notes. Check your grammar, translate, find useful words, or turn a PDF, PowerPoint, Word file or photo from class into a lesson note.</li>
               <li><b>Exercises:</b> paste an exercise from class, like "put the word in the right place" or "fill in the blanks", and practise it by dragging words or typing. Check your answers and get the rule explained in Danish and English.</li>
               <li><b>Vocab bank:</b> save words from your notes and let the tutor quiz you on them.</li>
-              <li><b>Practice</b> (button at the top): review your words with flashcards that come back just before you'd forget them, do timed drills, revise the sentences you got wrong, practise exam writing tasks (PD2, PD3, Studieprøven), talk with the tutor, and follow your progress and daily streak.</li>
+              <li><b>Practice</b> (button at the top): review your words with flashcards that come back just before you'd forget them, do timed drills, revise the sentences you got wrong, practise the written part of your module tests and final exams (PD1, PD2, PD3, Studieprøven), talk with the tutor, and follow your progress and daily streak.</li>
               <li><b>Lærer, your tutor:</b> ask anything about Danish in the panel on the right. Lærer can see the note or exercise you have open.</li>
             </ul>
             <h3>Turn on the AI tutor (free, about 5 minutes)</h3>
@@ -508,7 +509,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
               <li><b>Notes (noter):</b> skriv dine noter fra timerne. Tjek din grammatik, oversæt, find nyttige ord, eller lav en lektionsnote ud fra en PDF, PowerPoint, Word-fil eller et billede fra undervisningen.</li>
               <li><b>Exercises (øvelser):</b> indsæt en øvelse fra undervisningen, fx "skriv ordet det rigtige sted" eller "udfyld hullerne", og øv dig ved at trække ord eller skrive. Tjek dine svar, og få reglen forklaret på dansk og engelsk.</li>
               <li><b>Vocab bank (ordbank):</b> gem ord fra dine noter, og lad læreren høre dig i dem.</li>
-              <li><b>Practice</b> (knappen øverst): gennemgå dine ord med kort, der kommer igen, lige før du ville glemme dem, tag tidsbestemte øvelser, øv de sætninger, du havde forkert, øv skriveopgaver til prøverne (PD2, PD3, Studieprøven), tal med læreren, og følg dine fremskridt og din daglige stime.</li>
+              <li><b>Practice</b> (knappen øverst): gennemgå dine ord med kort, der kommer igen, lige før du ville glemme dem, tag tidsbestemte øvelser, øv de sætninger, du havde forkert, øv den skriftlige del af dine modultests og prøver (PD1, PD2, PD3, Studieprøven), tal med læreren, og følg dine fremskridt og din daglige stime.</li>
               <li><b>Lærer, din AI-lærer:</b> spørg om alt om dansk i feltet til højre. Lærer kan se den note eller øvelse, du har åben.</li>
             </ul>
             <h3>Sådan slår du AI-læreren til (gratis, ca. 5 minutter)</h3>
@@ -2530,9 +2531,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
           <p>${misN ? `You have <b>${misN}</b> exercise sentence${misN === 1 ? "" : "s"} you got wrong or looked up. Practise them again as a new exercise.` : "When you check exercises, the sentences you get wrong are collected here."}</p>
           <div class="row wrap"><button class="btn primary" data-pr="mistakes" ${misN ? "" : "disabled"}>Make a mistakes exercise</button></div></section>
         <section class="pr-card"><h3>Exam practice</h3>
-          <p>Get a writing task like the ones in the Danish exams, write your answer, and get feedback on it.</p>
-          <div class="row wrap"><select class="sel" id="examPick" aria-label="Exam">${EXAMS.map((e) => `<option value="${e.id}">${esc(e.name)}</option>`).join("")}</select>
-          <button class="btn primary ai" data-pr="exam" ${aiOn ? "" : "disabled"}>Get a writing task</button></div>
+          <p>Practise the written part of your module test or final exam: reading comprehension (læseforståelse) or a writing task (skriftlig fremstilling), at the right level, with feedback.</p>
+          <div class="row wrap"><select class="sel" id="examPick" aria-label="Module test or exam">${examOptions()}</select>
+          <select class="sel" id="examPart" aria-label="Part"><option value="writing" ${lsGet("kladde-exam-part") !== "reading" ? "selected" : ""}>Writing (skriftlig fremstilling)</option><option value="reading" ${lsGet("kladde-exam-part") === "reading" ? "selected" : ""}>Reading (læseforståelse)</option></select>
+          <button class="btn primary ai" data-pr="exam" ${aiOn ? "" : "disabled"}>Start</button></div>
           ${aiOn ? "" : '<p class="note-msg">Needs the AI tutor. Turn it on in Settings.</p>'}</section>
         <section class="pr-card"><h3>Speaking practice</h3>
           <p>Have a short conversation in Danish with the tutor. ${SR ? "Press <b>Speak</b> next to the chat box to answer out loud." : "This browser can't hear speech, so type your answers, or use Chrome or Edge to speak."} The tutor's replies are read aloud.</p>
@@ -2551,7 +2553,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     else if (a === "all") startReview(vocab.slice(), "All words");
     else if (a === "drill") startDrill(+b.dataset.min, b.dataset.mode);
     else if (a === "mistakes") makeMistakesExercise();
-    else if (a === "exam") startExam($("#examPick").value);
+    else if (a === "exam") startExam($("#examPick").value, $("#examPart").value);
     else if (a === "talk") {
       lsSet("kladde-read-aloud", "1"); renderSpeakToggle(); setView("tutor");
       sendChat(`Let's practise speaking Danish. Ask me one short, everyday question at a time, in Danish at my level (${level()}). When I answer, gently correct my Danish (show the corrected sentence in bold), then ask the next question. Keep every reply short.`);
@@ -2721,22 +2723,47 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
   }
 
   // Exam writing practice
+  // The Danish education for adults: three tracks with module tests, each ending in a final exam.
+  // Written levels: PD1 A1, PD2 B1, PD3 B2, Studieprøven C1 (after DU3 module 6).
   const EXAMS = [
-    { id: "pd2", name: "Prøve i Dansk 2 (PD2, about A2)", level: "A2" },
-    { id: "pd3", name: "Prøve i Dansk 3 (PD3, about B1)", level: "B1" },
-    { id: "sp", name: "Studieprøven (about B2)", level: "B2" },
+    { id: "pd1", group: "Final exams", name: "Prøve i Dansk 1 (PD1)", label: "Prøve i Dansk 1 (PD1), written A1", cefr: "A1 (oral A2+)", about: "Prøve i Dansk 1, the final exam of Danskuddannelse 1 (module 5)" },
+    { id: "pd2", group: "Final exams", name: "Prøve i Dansk 2 (PD2)", label: "Prøve i Dansk 2 (PD2), written B1", cefr: "B1 (oral B1+)", about: "Prøve i Dansk 2, the final exam of Danskuddannelse 2 (module 6)" },
+    { id: "pd3", group: "Final exams", name: "Prøve i Dansk 3 (PD3)", label: "Prøve i Dansk 3 (PD3), B2", cefr: "B2", about: "Prøve i Dansk 3, the final exam of Danskuddannelse 3 (module 5)" },
+    { id: "sp", group: "Final exams", name: "Studieprøven", label: "Studieprøven, C1", cefr: "C1", about: "Studieprøven, the exam after module 6 of Danskuddannelse 3, which gives access to higher education" },
+    ...[["1", 4, "PD1", "A1"], ["2", 5, "PD2", "B1"], ["3", 4, "PD3", "B2"]].flatMap(([du, n, fin, finLevel]) => [...Array(n)].map((_, k) => ({
+      id: `du${du}m${k + 1}`, group: `Module tests, Danskuddannelse ${du}`, name: `DU${du}, modultest ${k + 1}`, label: `DU${du}, modultest ${k + 1}`,
+      cefr: `the level reached at the end of module ${k + 1}, on the way to ${fin} (written ${finLevel})`,
+      about: `the module test at the end of module ${k + 1} of Danskuddannelse ${du}, which the learner must pass to continue to the next module (the track ends with ${fin})`,
+    }))),
   ];
-  async function startExam(id) {
-    const ex = EXAMS.find((e) => e.id === id) || EXAMS[0];
-    pr = { view: "exam", exam: ex, loading: "Writing a task for you..." };
+  const examOptions = () => {
+    const groups = [...new Set(EXAMS.map((e) => e.group))], pick = lsGet("kladde-exam") || "pd3";
+    return groups.map((g) => `<optgroup label="${esc(g)}">${EXAMS.filter((e) => e.group === g).map((e) => `<option value="${e.id}" ${e.id === pick ? "selected" : ""}>${esc(e.label)}</option>`).join("")}</optgroup>`).join("");
+  };
+  async function startExam(id, part) {
+    const ex = EXAMS.find((e) => e.id === id) || EXAMS[2];
+    lsSet("kladde-exam", ex.id); lsSet("kladde-exam-part", part);
+    pr = { view: "exam", exam: ex, part, loading: part === "reading" ? "Writing a reading text and questions for you..." : "Writing a task for you..." };
     renderPractice();
     try {
-      const t = await sample.json(
-        `Write one realistic written-production task like those in the Danish exam "${ex.name}" (level ${ex.level}). It should be an everyday writing task, such as an email, a message, a short text about your opinion or experience.\n` +
-        `Reply with only JSON: {"title": "short Danish title", "task": "the full task in Danish, as the exam would phrase it, with the points to cover", "taskEn": "the same task in English", "words": "the expected length, e.g. 80-120 ord", "criteria": ["what the examiner looks for, in English, 3 to 5 short points"]}. Don't use em dashes.`,
-        { maxTokens: 2500, cache: false }
-      );
-      pr.task = t; pr.loading = null; pr.answer = "";
+      if (part === "reading") {
+        pr.reading = await sample.json(
+          `Write one reading comprehension task (læseforståelse) like those in ${ex.about}. Level: ${ex.cefr}.\n` +
+          `Use an authentic-style Danish text (for example a notice, an email, an article or an advert) of a length that suits the level, followed by 6 multiple-choice questions in Danish, each with 4 options and exactly one correct answer.\n` +
+          `Reply with only JSON: {"title": "short Danish title", "text": "the Danish text", "questions": [{"q": "question in Danish", "options": ["a", "b", "c", "d"], "answer": index of the correct option (0-3), "why": "one short English sentence explaining where the answer is in the text"}]}. Don't use em dashes.`,
+          { maxTokens: 4000, cache: false }
+        );
+        if (!Array.isArray(pr.reading?.questions) || !pr.reading.questions.length) throw { code: "invalid_json" };
+        pr.picks = {};
+      } else {
+        pr.task = await sample.json(
+          `Write one realistic written-production task (skriftlig fremstilling) like those in ${ex.about}. Level: ${ex.cefr}. It should be an everyday writing task of the kind used at that level, such as an email, a message, or a text giving your opinion or describing an experience.\n` +
+          `Reply with only JSON: {"title": "short Danish title", "task": "the full task in Danish, as the exam would phrase it, with the points to cover", "taskEn": "the same task in English", "words": "the expected length, e.g. 80-120 ord", "criteria": ["what the examiner looks for, in English, 3 to 5 short points"]}. Don't use em dashes.`,
+          { maxTokens: 2500, cache: false }
+        );
+        pr.answer = "";
+      }
+      pr.loading = null;
     } catch (e) { pr.loading = null; pr.error = errCopy(e); }
     renderPractice();
   }
@@ -2745,6 +2772,20 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     const head = `<div class="row wrap">${back}<span class="note-msg">${esc(pr.exam.name)}</span></div>`;
     if (pr.loading) { prBody.innerHTML = `<div class="pr">${head}<p class="note-msg">${esc(pr.loading)}</p></div>`; return; }
     if (pr.error) { prBody.innerHTML = `<div class="pr">${head}<p class="note-msg bad">${esc(pr.error)}</p></div>`; return; }
+    if (pr.part === "reading") {
+      const R = pr.reading, qs = R.questions, done = pr.readChecked;
+      const right = done ? qs.filter((q, k) => pr.picks[k] === +q.answer).length : 0;
+      prBody.innerHTML = `<div class="pr">${head}
+        <section class="pr-card"><h3>Læseforståelse: ${esc(R.title || "")}</h3><p lang="da" class="task">${esc(R.text || "")}</p></section>
+        ${qs.map((q, k) => `<section class="pr-card"><p lang="da"><b>${k + 1}. ${esc(q.q)}</b></p><div class="opts long">${(q.options || []).map((o, n) => {
+          const cls = done ? (n === +q.answer ? "ok" : pr.picks[k] === n ? "bad" : "") : pr.picks[k] === n ? "picked" : "";
+          return `<button class="opt ${cls}" data-rq="${k}" data-opt="${n}" lang="da" ${done ? "disabled" : ""}>${esc(o)}</button>`; }).join("")}</div>
+          ${done && q.why ? `<p class="note-msg">${esc(q.why)}</p>` : ""}</section>`).join("")}
+        ${pr.checkError ? `<p class="note-msg bad">${esc(pr.checkError)}</p>` : ""}
+        <div class="row wrap">${done ? `<b class="${right === qs.length ? "ok-t" : ""}">${right} of ${qs.length} right</b>` : '<button class="btn primary" id="readCheck">Check answers</button>'}<button class="btn" data-pr="exam-new">New text</button></div>
+        <p class="note-msg">Practice material written by the AI at ${esc(pr.exam.cefr)} level. It's not official exam material.</p></div>`;
+      return;
+    }
     const t = pr.task || {}, words = (pr.answer || "").trim().split(/\s+/).filter(Boolean).length, fb = pr.feedback;
     prBody.innerHTML = `<div class="pr">${head}
       <section class="pr-card"><h3>${esc(t.title || "Writing task")}</h3>
@@ -2768,7 +2809,17 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
   prBody.addEventListener("input", (e) => { if (e.target.id === "examAnswer") { pr.answer = e.target.value; const l = prBody.querySelector('label[for="examAnswer"]'); if (l) l.textContent = `Your answer (${pr.answer.trim().split(/\s+/).filter(Boolean).length} words)`; } });
   prBody.addEventListener("click", async (e) => {
     if (pr.view !== "exam") return;
-    if (e.target.closest('[data-pr="exam-new"]')) { startExam(pr.exam.id); return; }
+    if (e.target.closest('[data-pr="exam-new"]')) { startExam(pr.exam.id, pr.part); return; }
+    const pick = e.target.closest("[data-rq]");
+    if (pick && pr.part === "reading" && !pr.readChecked) { pr.picks[pick.dataset.rq] = +pick.dataset.opt; renderPractice(); return; }
+    if (e.target.closest("#readCheck")) {
+      const qs = pr.reading.questions;
+      if (Object.keys(pr.picks).length < qs.length) { pr.checkError = "Answer every question first."; renderPractice(); return; }
+      pr.readChecked = true; pr.checkError = null;
+      const right = qs.filter((q, k) => pr.picks[k] === +q.answer).length;
+      addXp(Math.max(2, right * 2), "exams");
+      renderPractice(); return;
+    }
     if (e.target.closest("#examSave")) {
       const t = pr.task, fb = pr.feedback, id = newId(), now = Date.now();
       const li = (a) => (Array.isArray(a) ? a : []).map((x) => `<li>${esc(typeof x === "string" ? x : `${x.original} → ${x.better}: ${x.why}`)}</li>`).join("");
@@ -2782,7 +2833,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     pr.checking = true; pr.checkError = null; renderPractice();
     try {
       pr.feedback = await sample.json(
-        `You are an experienced examiner for the Danish exam "${pr.exam.name}" (level ${pr.exam.level}). Mark this written answer the way that exam assesses written work: task completion and content, text type and register, vocabulary, grammar and spelling, and coherence. Be honest and encouraging.\n` +
+        `You are an experienced examiner for ${pr.exam.about}. Level: ${pr.exam.cefr}. Mark this written answer (skriftlig fremstilling) against that level, the way the exam assesses written work: task completion and content, text type and register, vocabulary, grammar and spelling, and coherence. Be honest and encouraging.\n` +
         `TASK:\n${pr.task.task}\n\nANSWER:\n${pr.answer.slice(0, 6000)}\n\n` +
         `Reply with only JSON: {"verdict": "Likely to pass" or "Not quite at the pass level yet", "score": a number 0-100, "summary": "2 to 3 sentences in English", "summaryDa": "the same in simple Danish", "strengths": ["short points in English"], "fixes": [{"original": "words from the answer", "better": "corrected Danish", "why": "short English reason"}], "improved": "the whole answer corrected, keeping the learner's ideas"}. At most 8 fixes. Don't use em dashes.`,
         { maxTokens: 5000, cache: false }
