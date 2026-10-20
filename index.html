@@ -348,7 +348,7 @@ button { cursor: pointer; }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.12</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.13</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="sheet-bg" id="profiles" hidden>
@@ -423,8 +423,17 @@ button { cursor: pointer; }
               <li>Click <b>Settings</b> at the top right (or the button below), choose <b>Groq</b>, paste the key into <b>API key</b>, and click <b>Save</b>.</li>
             </ol>
             <p>Groq is free, with a daily limit. For the best Danish, you can choose <b>Claude</b> in Settings instead. It costs a little, usually well under one cent per question.</p>
+            <h3>Profiles</h3>
+            <p>A profile is a separate set of notes, exercises and Vocab bank. Use one for each person who shares this device, or one for each course or module.</p>
+            <ol>
+              <li>Click the profile name at the top right, next to <b>Level</b>. It starts as <b>Main</b>.</li>
+              <li>To add a profile, type a name under <b>Add a profile</b> and click <b>Add and open</b>.</li>
+              <li>To switch, click <b>Open</b> next to the profile you want. To change a name, click <b>Rename</b>.</li>
+            </ol>
+            <p>Your AI key, level and other settings are shared by all profiles.</p>
             <h3>Where your work is saved</h3>
-            <p>Your notes, exercises, words and key are saved only in this browser, on this device. Use <b>Settings</b> &gt; <b>Download backup</b> now and then to keep a copy.</p>
+            <p>Your notes, exercises and words are saved in this browser, on this device. To see the same work on your laptop and phone, turn on <b>Sync between devices</b> in <b>Settings</b>. It saves everything, every profile included, in a private repository in your GitHub account. <a href="https://github.com/sibethale/kladde#sync-between-devices" target="_blank" rel="noopener">How to set up sync</a></p>
+            <p>You can also use <b>Settings</b> &gt; <b>Download backup</b> to keep an extra copy.</p>
             <div class="row"><button type="button" class="btn primary" data-open-settings>Open Settings</button></div>
           </div>
 
@@ -445,8 +454,17 @@ button { cursor: pointer; }
               <li>Klik på <b>Settings</b> øverst til højre (eller knappen nedenfor), vælg <b>Groq</b>, indsæt nøglen i <b>API key</b>, og klik på <b>Save</b>.</li>
             </ol>
             <p>Groq er gratis, men der er en daglig grænse. Vil du have det bedste dansk, kan du vælge <b>Claude</b> i Settings i stedet. Det koster lidt, som regel under 10 øre pr. spørgsmål.</p>
+            <h3>Profiler</h3>
+            <p>En profil er et separat sæt noter, øvelser og Vocab bank. Brug en profil til hver person, der deler denne enhed, eller en til hvert kursus eller modul.</p>
+            <ol>
+              <li>Klik på profilnavnet øverst til højre, ved siden af <b>Level</b>. Det hedder <b>Main</b> fra start.</li>
+              <li>Vil du tilføje en profil, så skriv et navn under <b>Add a profile</b>, og klik på <b>Add and open</b>.</li>
+              <li>Vil du skifte, så klik på <b>Open</b> ved den profil, du vil bruge. Klik på <b>Rename</b> for at ændre et navn.</li>
+            </ol>
+            <p>Din AI-nøgle, dit niveau og dine andre indstillinger er fælles for alle profiler.</p>
             <h3>Hvor dit arbejde gemmes</h3>
-            <p>Dine noter, øvelser, ord og din nøgle gemmes kun i denne browser, på denne enhed. Brug <b>Settings</b> &gt; <b>Download backup</b> en gang imellem for at gemme en kopi.</p>
+            <p>Dine noter, øvelser og ord gemmes i denne browser, på denne enhed. Vil du se det samme på din computer og din telefon, så slå <b>Sync between devices</b> til under <b>Settings</b>. Så gemmes det hele, alle profiler med, i et privat repository på din GitHub-konto. <a href="https://github.com/sibethale/kladde#sync-between-devices" target="_blank" rel="noopener">Sådan sætter du sync op (på engelsk)</a></p>
+            <p>Du kan også bruge <b>Settings</b> &gt; <b>Download backup</b> for at gemme en ekstra kopi.</p>
             <div class="row"><button type="button" class="btn primary" data-open-settings>Åbn Settings</button></div>
           </div>
         </div>
