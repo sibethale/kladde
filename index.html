@@ -116,6 +116,15 @@ button { cursor: pointer; }
 .note-item small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .empty { color: var(--muted); font-size: 13px; padding: 14px 10px; }
 .vocab-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.vgroup { border-bottom: 1px solid var(--line); }
+.vgroup > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 8px; padding: 10px 10px 8px; background: var(--paper); position: sticky; top: 0; z-index: 1; }
+.vgroup > summary::-webkit-details-marker { display: none; }
+.vgroup > summary::before { content: "\25B8"; color: var(--muted); font-size: 11px; transition: transform .15s; }
+.vgroup[open] > summary::before { transform: rotate(90deg); }
+.vg-title { font-family: var(--f-display); font-weight: 600; font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vg-meta { font-family: var(--f-mono); font-size: 11px; color: var(--muted); flex: none; }
+.vg-tools { display: flex; gap: 6px; padding: 6px 10px; flex-wrap: wrap; }
+.vgroup .vocab-item:last-child { border-bottom: 0; }
 .vocab-item .da { font-family: var(--f-display); font-size: 16px; font-weight: 600; }
 .vocab-item .en { color: var(--muted); font-size: 13px; grid-column: 1; }
 .vocab-item .ex { font-size: 12px; color: var(--muted); font-style: italic; grid-column: 1; }
@@ -396,7 +405,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.14</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.15</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="sheet-bg" id="profiles" hidden>
@@ -429,6 +438,9 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       <div class="row" id="notesTools">
         <input class="search" id="search" type="search" placeholder="Search notes">
         <button class="btn primary" id="newNote">+ New</button>
+      </div>
+      <div class="row" id="vocabTools" hidden>
+        <input class="search" id="vocabSearch" type="search" placeholder="Search words (Danish or English)">
       </div>
       <div class="row" id="exTools" hidden>
         <button class="btn primary" id="newEx" style="flex:1;justify-content:center">+ New exercise</button>
@@ -1063,7 +1075,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     $("#tabVocab").setAttribute("aria-selected", String(which === "vocab"));
     $("#noteList").hidden = $("#notesTools").hidden = which !== "notes";
     $("#exList").hidden = $("#exTools").hidden = which !== "ex";
-    $("#vocabList").hidden = which !== "vocab";
+    $("#vocabList").hidden = $("#vocabTools").hidden = which !== "vocab";
     $("#vocabFoot").hidden = which !== "vocab" || !vocab.length;
   }
   // Switching tabs closes whatever is open, so the middle page is blank
@@ -1075,7 +1087,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
   }
   $("#tabNotes").onclick = () => { showShelf("notes"); clearPage(); };
   $("#tabEx").onclick = () => { showShelf("ex"); clearPage(); };
-  $("#tabVocab").onclick = () => { showShelf("vocab"); clearPage(); };
+  $("#tabVocab").onclick = () => { showShelf("vocab"); renderVocab(); clearPage(); };
   $("#search").oninput = renderNoteList;
 
   function plain(html) { const d = document.createElement("div"); d.innerHTML = html || ""; return d.textContent.replace(/\s+/g, " ").trim(); }
@@ -1094,19 +1106,52 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     list.querySelectorAll(".note-item").forEach((b) => (b.onclick = () => { openNote(b.dataset.id); setView("page"); }));
   }
 
+  // Vocab bank: grouped by the lesson note each word came from, with search
+  const vocabOpen = new Set(), vocabClosed = new Set();
   function renderVocab() {
     $("#vCount").textContent = vocab.length;
     const list = $("#vocabList");
     $("#vocabFoot").hidden = $("#vocabList").hidden || !vocab.length;
     if (!vocab.length) { list.innerHTML = '<div class="empty">No words saved yet. Open a note and press <b>Find vocabulary</b> to collect words from it.</div>'; return; }
-    list.innerHTML = vocab.map((v) => `<div class="vocab-item"><span class="da">${esc(v.da)}</span><button class="x" data-id="${esc(v.id)}" title="Remove word" aria-label="Remove ${esc(v.da)}">×</button><span class="en">${esc(v.en)}</span>${v.example ? `<span class="ex">${esc(v.example)}</span>` : ""}<span class="due-tag ${isMastered(v) ? "m" : isDue(v) ? "d" : ""}">${esc(dueLabel(v))}</span></div>`).join("");
+    const fold = (t) => normAns(t).replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa");
+    const q = fold($("#vocabSearch").value);
+    const shown = q ? vocab.filter((v) => [v.da, v.en, v.example].some((t) => fold(t).includes(q))) : vocab;
+    if (!shown.length) { list.innerHTML = '<div class="empty">No words match that search.</div>'; return; }
+    const groups = new Map();
+    for (const v of shown) {
+      const n = v.noteId && notes.find((x) => x.id === v.noteId);
+      const key = n ? n.id : v.noteId ? "_gone" : "_none";
+      if (!groups.has(key)) groups.set(key, { key, title: n ? n.title || "Untitled note" : v.noteId ? "From a deleted note" : "Other words", t: n ? n.updatedAt || 0 : -1, words: [] });
+      groups.get(key).words.push(v);
+    }
+    const sorted = [...groups.values()].sort((a, b) => b.t - a.t);
+    list.innerHTML = sorted.map((g) => {
+      const open = q || (vocabOpen.has(g.key) || (!vocabClosed.has(g.key)));
+      const due = g.words.filter(isDue).length;
+      return `<details class="vgroup" data-key="${esc(g.key)}" ${open ? "open" : ""}>
+        <summary><span class="vg-title">${esc(g.title)}</span><span class="vg-meta">${g.words.length}${due ? ` · ${due} due` : ""}</span></summary>
+        <div class="vg-tools"><button class="btn small" type="button" data-vreview="${esc(g.key)}">Review these ${g.words.length}</button>${g.key.startsWith("_") ? "" : `<button class="btn small" type="button" data-vopen="${esc(g.key)}">Open note</button>`}</div>
+        ${g.words.map((v) => `<div class="vocab-item"><span class="da">${esc(v.da)}</span><button class="x" data-id="${esc(v.id)}" title="Remove word" aria-label="Remove ${esc(v.da)}">×</button><span class="en">${esc(v.en)}</span>${v.example ? `<span class="ex">${esc(v.example)}</span>` : ""}<span class="due-tag ${isMastered(v) ? "m" : isDue(v) ? "d" : ""}">${esc(dueLabel(v))}</span></div>`).join("")}
+      </details>`;
+    }).join("");
     list.querySelectorAll(".x").forEach((b) => (b.onclick = () => store.deleteVocab(b.dataset.id)));
+    list.querySelectorAll(".vgroup").forEach((d) => d.addEventListener("toggle", () => {
+      if (q) return;
+      if (d.open) { vocabOpen.add(d.dataset.key); vocabClosed.delete(d.dataset.key); } else { vocabClosed.add(d.dataset.key); vocabOpen.delete(d.dataset.key); }
+    }));
+    list.querySelectorAll("[data-vreview]").forEach((b) => (b.onclick = () => {
+      const g = groups.get(b.dataset.vreview); if (!g) return;
+      openPractice(); startReview(g.words.slice(), g.title);
+    }));
+    list.querySelectorAll("[data-vopen]").forEach((b) => (b.onclick = () => { openNote(b.dataset.vopen); setView("page"); }));
   }
+  $("#vocabSearch").addEventListener("input", renderVocab);
 
   // ---------- notes ----------
   function onNotes(list) {
     notes = list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     renderNoteList();
+    if (!$("#vocabList").hidden) renderVocab();
     if (!currentId) return;
     const n = notes.find((x) => x.id === currentId);
     if (!n) { if (!saving && !dirty) { currentId = null; renderPage(); } return; }
