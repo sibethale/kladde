@@ -71,7 +71,7 @@ button { cursor: pointer; }
 .banner { background: var(--sea-soft); color: var(--ink); border-radius: var(--r); padding: 8px 12px; font-size: 13px; margin-bottom: 10px; }
 
 /* Main grid */
-.desk { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr) 370px; gap: 14px; padding-bottom: 14px; }
+.desk { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr) 370px; gap: 14px; padding-bottom: 14px; }
 .pane { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 
 /* Shelf */
@@ -178,7 +178,7 @@ button { cursor: pointer; }
 /* Mobile pane switcher */
 .switcher { display: none; }
 @media (max-width: 980px) {
-  .desk { grid-template-columns: 220px minmax(0,1fr); }
+  .desk { grid-template-columns: 250px minmax(0,1fr); }
   .desk .tutor { display: none; }
   body.view-tutor .desk .tutor { display: flex; }
   body.view-tutor .desk .page { display: none; }
@@ -209,7 +209,7 @@ button { cursor: pointer; }
 .sheet-title { font-family: var(--f-display); font-size: 26px; font-weight: 600; margin: 0; }
 
 /* Exercises */
-.tabs button { padding: 6px 4px; font-size: 12.5px; }
+.tabs button { padding: 6px 4px; font-size: 12.5px; white-space: nowrap; }
 .ex-ins { max-width: 72ch; font-size: 15px; background: var(--paper); border-radius: 10px; padding: 10px 14px; white-space: pre-wrap; }
 .ex-items { display: flex; flex-direction: column; max-width: 78ch; }
 .ex-item { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); gap: 2px 6px; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -319,7 +319,7 @@ button { cursor: pointer; }
       <div class="tabs" role="tablist">
         <button id="tabNotes" role="tab" aria-selected="true">Notes</button>
         <button id="tabEx" role="tab" aria-selected="false">Exercises</button>
-        <button id="tabVocab" role="tab" aria-selected="false">Words <span class="count" id="vCount">0</span></button>
+        <button id="tabVocab" role="tab" aria-selected="false">Vocab bank <span class="count" id="vCount">0</span></button>
       </div>
       <div class="row" id="notesTools">
         <input class="search" id="search" type="search" placeholder="Search notes">
@@ -472,7 +472,8 @@ button { cursor: pointer; }
 
   // ---------- state ----------
   let store = null, sample = null, aiOn = false;
-  let pageMode = "note"; // what the middle pane shows: "note", "exercise" or "newEx"
+  let pageMode = "blank"; // what the middle pane shows: "blank", "note", "exercise" or "newEx"
+  let lastNoteId = null; // the last note you had open (for "Use my last open note")
   let exercises = [], currentEx = null;
   let notes = [], vocab = [], currentId = null, firstNotes = true;
   let saveTimer = null, saving = false, dirty = false;
@@ -531,7 +532,7 @@ button { cursor: pointer; }
   const PROVIDERS = {
     groq: {
       keyName: "kladde-key-groq", keyPrefix: "gsk_", url: "https://api.groq.com/openai/v1",
-      models: ["openai/gpt-oss-120b"], budget: 6000, maxOut: 3000,
+      models: ["openai/gpt-oss-120b"], budget: 6000, maxOut: 5000,
       help: 'Free. Sign up at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>, click <b>Create API Key</b> and copy it (it starts with gsk_). Free accounts have daily limits, and long files are shortened.',
     },
     openrouter: {
@@ -550,6 +551,8 @@ button { cursor: pointer; }
   const getKey = () => lsGet(P().keyName) || "";
   const getModel = () => lsGet("kladde-model-" + provider()) || (provider() === "claude" ? lsGet("kladde-model") : "") || P().models[0] || "";
 
+  // Some models write their thinking inside <think> tags; never show that
+  const stripThink = (t) => String(t).replace(/<think>[\s\S]*?(<\/think>\s*|$)/g, "");
   // Free services (Groq, OpenRouter) use the OpenAI-style chat format
   async function callOpenAI(messages, opts, key) {
     const p = P(), model = getModel();
@@ -564,7 +567,13 @@ button { cursor: pointer; }
       res = await fetch(p.url + "/chat/completions", {
         method: "POST", signal: opts.signal,
         headers: { "content-type": "application/json", authorization: "Bearer " + key },
-        body: JSON.stringify({ model, messages, stream: true, max_tokens: Math.min(opts.maxTokens || 4000, p.maxOut) }),
+        body: JSON.stringify(Object.assign(
+          { model, messages, stream: true, max_tokens: Math.min(opts.maxTokens || 4000, p.maxOut) },
+          // "Thinking" models: keep the hidden thinking short so there's room left for the answer
+          provider() === "groq" && /gpt-oss/i.test(model) ? { reasoning_effort: "low" } : {},
+          provider() === "groq" && /qwen/i.test(model) ? { reasoning_format: "hidden" } : {},
+          provider() === "openrouter" ? { reasoning: { effort: "low", exclude: true } } : {}
+        )),
       });
     } catch (e) { throw { code: e?.name === "AbortError" ? "cancelled" : "network" }; }
     if (!res.ok) {
@@ -591,7 +600,7 @@ button { cursor: pointer; }
           if (ev.error) throw { code: /image|vision/i.test(ev.error.message || "") ? "no_vision" : "upstream_error", text, message: ev.error.message };
           const ch = ev.choices?.[0];
           const piece = ch?.delta?.content;
-          if (piece) { text += piece; opts.onText?.({ text, delta: piece }); }
+          if (piece) { text += piece; const shown = stripThink(text); if (shown.trim()) opts.onText?.({ text: shown, delta: piece }); }
           if (ch?.finish_reason) stop = ch.finish_reason;
         }
       }
@@ -600,7 +609,8 @@ button { cursor: pointer; }
       if (e?.code) throw e;
       throw { code: "network", text };
     }
-    if (!text.trim()) throw { code: "empty_completion" };
+    text = stripThink(text);
+    if (!text.trim()) throw { code: stop === "length" ? "out_of_room" : "empty_completion" };
     return { text, truncated: stop === "length" };
   }
 
@@ -699,7 +709,7 @@ button { cursor: pointer; }
     document.querySelectorAll(".switcher button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === v)));
   }
   document.querySelectorAll(".switcher button").forEach((b) => (b.onclick = () => setView(b.dataset.view)));
-  setView("page");
+  setView("notes");
 
   // ---------- shelf ----------
   function showShelf(which) {
@@ -711,9 +721,16 @@ button { cursor: pointer; }
     $("#vocabList").hidden = which !== "vocab";
     $("#vocabFoot").hidden = which !== "vocab" || !vocab.length;
   }
-  $("#tabNotes").onclick = () => showShelf("notes");
-  $("#tabEx").onclick = () => showShelf("ex");
-  $("#tabVocab").onclick = () => showShelf("vocab");
+  // Switching tabs closes whatever is open, so the middle page is blank
+  async function clearPage() {
+    if (currentId && dirty) await flushSave();
+    pageMode = "blank"; currentId = null; currentEx = null; sel = null;
+    $("#results").innerHTML = "";
+    renderPage(); renderNoteList(); renderExList(); renderChat();
+  }
+  $("#tabNotes").onclick = () => { showShelf("notes"); clearPage(); };
+  $("#tabEx").onclick = () => { showShelf("ex"); clearPage(); };
+  $("#tabVocab").onclick = () => { showShelf("vocab"); clearPage(); };
   $("#search").oninput = renderNoteList;
 
   function plain(html) { const d = document.createElement("div"); d.innerHTML = html || ""; return d.textContent.replace(/\s+/g, " ").trim(); }
@@ -745,7 +762,6 @@ button { cursor: pointer; }
   function onNotes(list) {
     notes = list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     renderNoteList();
-    if (firstNotes && notes.length && !currentId) { firstNotes = false; openNote(notes[0].id); return; }
     if (!currentId) return;
     const n = notes.find((x) => x.id === currentId);
     if (!n) { if (!saving && !dirty) { currentId = null; renderPage(); } return; }
@@ -756,7 +772,7 @@ button { cursor: pointer; }
 
   async function openNote(id) {
     if (currentId && dirty) await flushSave();
-    pageMode = "note"; currentEx = null; renderExList();
+    pageMode = "note"; currentEx = null; lastNoteId = id; renderExList();
     currentId = id;
     const n = notes.find((x) => x.id === id);
     titleIn.value = n?.title || "";
@@ -830,7 +846,7 @@ button { cursor: pointer; }
       chats.delete(id);
       renderPage(); renderNoteList(); renderChat();
       try { await store.deleteNote(id); setStatus("Deleted"); } catch { setStatus("Couldn't delete", "bad"); }
-      if (notes.length) openNote(notes[0].id);
+      pageMode = "blank"; renderPage();
     };
   }
   resetDelete();
@@ -882,7 +898,8 @@ button { cursor: pointer; }
       case "refused": return "The AI declined that request. Try rewording it.";
       case "prompt_too_large": return "This note is too long to send in one go. Select a smaller part and try again.";
       case "invalid_json": return "The AI's answer came back in an unexpected shape. Press the button again.";
-      case "empty_completion": return "The AI didn't write anything. Try asking for less at once.";
+      case "empty_completion": return "The AI didn't write anything. Press the button again.";
+      case "out_of_room": return "The AI ran out of space before it finished. Press the button again, or try fewer sentences at a time.";
       default: return "Couldn't reach the AI service. Check your connection and try again.";
     }
   }
@@ -1326,7 +1343,7 @@ button { cursor: pointer; }
     exercises = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     if (currentEx) {
       const fresh = exercises.find((e) => e.id === currentEx.id);
-      if (fresh) currentEx = fresh; else if (pageMode === "exercise") { currentEx = null; pageMode = "note"; renderPage(); }
+      if (fresh) currentEx = fresh; else if (pageMode === "exercise") { currentEx = null; pageMode = "blank"; renderPage(); }
     }
     renderExList();
   }
@@ -1565,7 +1582,7 @@ button { cursor: pointer; }
       const id = currentEx?.id; if (!id) return;
       clearTimeout(exSaveT);
       chats.delete("ex:" + id);
-      currentEx = null; pageMode = "note";
+      currentEx = null; pageMode = "blank";
       await store.deleteExercise(id);
       renderPage(); renderChat(); setStatus("Deleted");
     };
@@ -1628,10 +1645,10 @@ button { cursor: pointer; }
   };
   $("#exGen").onclick = async () => {
     const msg = $("#exGenMsg"), topic = $("#exTopic").value.trim(), kind = $("#exKind").value;
-    const useNote = $("#exFromNote").checked && currentId;
+    const useNote = $("#exFromNote").checked && lastNoteId;
     if (!aiOn) { openSettings(); return; }
     if (!topic && !useNote) { msg.className = "note-msg bad"; msg.textContent = "Type a topic, or tick \"Use my last open note\"."; return; }
-    const n = useNote ? notes.find((x) => x.id === currentId) : null;
+    const n = useNote ? notes.find((x) => x.id === lastNoteId) : null;
     const noteBody = n ? plain(n.html).slice(0, P().budget) : "";
     msg.className = "note-msg"; msg.textContent = "Writing your exercise. This can take a minute...";
     $("#exGen").disabled = true;
