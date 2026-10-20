@@ -1248,6 +1248,57 @@ button { cursor: pointer; }
     return res;
   }
 
+  // ---------- Danish word-order rules for sentence adverbs ----------
+  const ADVS = new Set(["ikke", "aldrig", "altid", "tit", "ofte", "gerne", "nok", "også", "faktisk", "virkelig", "allerede", "selvfølgelig",
+    "desværre", "heldigvis", "bare", "lige", "jo", "vel", "stadig", "snart", "måske", "sjældent", "sommetider", "nogle gange", "som regel",
+    "hele tiden", "endnu", "egentlig", "næsten", "heller ikke", "kun", "vist", "nemlig", "bestemt", "sikkert", "straks", "netop", "dog",
+    "alligevel", "endelig", "absolut", "slet ikke", "overhovedet ikke", "i hvert fald", "trods alt", "først", "lige nu", "for det meste"]);
+  // Words already in a main clause that the new adverb steps over ("Jeg er desværre ikke ...")
+  const SKIP_ADV = [["desværre"], ["jo"], ["vel"], ["nok"], ["egentlig"], ["heldigvis"], ["nemlig"], ["vist"], ["åbenbart"], ["altså"], ["dog"], ["i", "hvert", "fald"], ["trods", "alt"], ["alligevel"]];
+  // Short pronouns come before the adverb ("Jeg ved det ikke", "giver jeg dig selvfølgelig")
+  const OBJ_PRON = new Set(["mig", "dig", "ham", "hende", "den", "det", "os", "jer", "dem", "sig"]);
+  const SUBJ_PRON = new Set(["jeg", "du", "han", "hun", "den", "det", "vi", "i", "de", "man", "der"]);
+  const SUBS = new Set(["at", "fordi", "når", "hvis", "selvom", "skønt", "da", "der", "som", "hvor", "hvorfor", "hvad", "hvem", "hvilken", "hvilket", "hvilke", "hvordan", "hvornår", "om", "mens", "før", "inden", "efter", "siden", "indtil"]);
+  const COORD = new Set(["og", "men", "eller", "for"]);
+  const isBoundary = (t) => /^[.,!?;:\u2013\u2014]+$/.test(t);
+
+  // Where a sentence adverb goes, using the clause's finite verb and subject (from the AI). Null if unsure.
+  function ruleGap(tokens, chip, info) {
+    const T = tokens.map(normW), end = chip.start;
+    let cs = end;
+    while (cs > 0 && !isBoundary(tokens[cs - 1])) cs--;
+    const sentStart = cs === 0 || /[.!?:]/.test(tokens[cs - 1]);
+    let f = cs;
+    while (f < end && COORD.has(T[f])) f++;
+    const verb = tokenize(info.verb || "").map(normW);
+    if (verb.length !== 1) return null;
+    let v = -1;
+    for (let k = end - 1; k >= cs; k--) if (T[k] === verb[0]) { v = k; break; }
+    if (v < 0) return null;
+    // Subordinate clause: the adverb goes before the verb
+    const sub = SUBS.has(T[f]) && f < v && !(sentStart && v === f + 1 && T[f] !== "at");
+    if (sub) return { g: v, how: "sub", verb: tokens[v], word0: tokens[f] };
+    // Main clause: after the verb, after the subject if it comes after the verb, after a short pronoun
+    let p = v + 1, subj = null, pron = null;
+    const sw = tokenize(info.subject || "").map(normW);
+    if (sw.length && sw.every((w, j) => T[p + j] === w)) { subj = tokens.slice(p, p + sw.length).join(" "); p += sw.length; }
+    else if (!sw.length && SUBJ_PRON.has(T[p])) { subj = tokens[p]; p++; }
+    if (p < end && OBJ_PRON.has(T[p])) { pron = tokens[p]; p++; }
+    for (let moved = true; moved;) {
+      moved = false;
+      for (const a of SKIP_ADV) if (p + a.length <= end && a.every((w, j) => T[p + j] === w)) { p += a.length; moved = true; break; }
+    }
+    if (p > end) return null;
+    return { g: p, how: subj ? "inv" : "main", verb: tokens[v], subj, pron };
+  }
+  function ruleWhy(word, r) {
+    if (r.how === "sub") return `"${word}": the clause starts with "${r.word0}", so it's a subordinate clause, and the adverb goes before the verb "${r.verb}".`;
+    let s = `"${word}": main clause, so the adverb goes after the verb "${r.verb}"`;
+    if (r.how === "inv") s += `, and after the subject "${r.subj}", because the subject comes after the verb here (inversion)`;
+    if (r.pron) s += `. A short pronoun like "${r.pron}" comes before the adverb`;
+    return s + ".";
+  }
+
   function freshState(ex) {
     return ex.type === "place"
       ? { pos: ex.items.map((it) => it.chips.map((c) => c.start)), moved: ex.items.map((it) => it.chips.map(() => false)), shown: {}, checked: false }
@@ -1262,14 +1313,25 @@ button { cursor: pointer; }
       if (type === "place") {
         const { tokens, chips } = parsePlace(given);
         chips.forEach((c) => (c.answers = []));
-        let auto = chips.length > 0 && !!it.correct;
-        [it.correct, ...(Array.isArray(it.alternatives) ? it.alternatives : [])].filter(Boolean).forEach((sentence, k) => {
+        // With the free AI services, adverb positions come from the word-order rules, not the AI's own answer
+        const whys = [];
+        if (provider() !== "claude") {
+          const infos = Array.isArray(it.words) ? it.words.filter(Boolean).slice() : [];
+          chips.forEach((c) => {
+            if (!ADVS.has(tokenize(c.word).map(normW).join(" "))) return;
+            const idx = infos.findIndex((x) => tokenize(String(x.word || "")).map(normW).join(" ") === tokenize(c.word).map(normW).join(" "));
+            const info = idx >= 0 ? infos.splice(idx, 1)[0] : null;
+            const r = info ? ruleGap(tokens, c, info) : null;
+            if (r) { c.answers = [r.g]; c.rule = true; whys.push(ruleWhy(c.word, r)); }
+          });
+        }
+        [it.correct, ...(Array.isArray(it.alternatives) ? it.alternatives : [])].filter(Boolean).forEach((sentence) => {
           const g = answerGaps(tokens, chips, sentence);
-          if (g) g.forEach((x, i) => { if (!chips[i].answers.includes(x)) chips[i].answers.push(x); });
-          else if (k === 0) auto = false;
+          if (g) g.forEach((x, i) => { if (!chips[i].rule && !chips[i].answers.includes(x)) chips[i].answers.push(x); });
         });
-        if (chips.some((c) => !c.answers.length)) auto = false;
-        return { given, correct: String(it.correct || ""), why: String(it.why || ""), tokens, chips, auto };
+        const auto = chips.length > 0 && chips.every((c) => c.answers.length);
+        const why = whys.length === chips.length ? whys.join(" ") : String(it.why || "");
+        return { given, correct: String(it.correct || ""), why, tokens, chips, auto };
       }
       const parts = given.split(/_{2,}/);
       const answers = parts.slice(1).map((_, b) => {
@@ -1607,12 +1669,13 @@ button { cursor: pointer; }
     `For "place" items:\n- "given": the sentence(s) with each word to place in parentheses, exactly where it appears in the exercise. If the learner has already written one of those words into the sentence (it appears both in the sentence and in parentheses), remove that copy so only the one in parentheses remains. Keep speaker labels like "A:" and "B:". Leave out the item number.\n` +
     `- "correct": the same text with every word from the parentheses placed correctly and the parentheses removed. Don't change any other words, and don't change the order of the other words.\n` +
     `- "alternatives": other fully correct versions, only if a word can really go in more than one place. Otherwise [].\n` +
+    `- "words": for each word in parentheses, in the same order: {"word": the word, "verb": the finite (conjugated, present or past tense) verb of the clause the word belongs to, copied exactly as written in that clause, one word only, "subject": the subject of that clause, copied exactly}.\n` +
     `- Use correct Danish word order: in a main clause, a central adverb (ikke, aldrig, altid, også, tit, gerne, nok, faktisk, virkelig...) goes right after the finite verb, or after the subject when the subject comes after the verb. In a subordinate clause (at, fordi, når, hvis, selvom, der, som, hvorfor...), it goes before the finite verb.\n` +
     `For "fill" items:\n- "given": the sentence with each blank written as ___ (three underscores). Keep any hint in parentheses after the blank.\n- "answers": for each blank in order, a list of accepted answers.\n- "correct": the full sentence with the blanks filled in.\n` +
     `"why" (both types), written BEFORE "correct": in short English, work out the rule. For a "place" item, for each word in parentheses say which clause it belongs to (main or subordinate), what that clause's finite verb is, whether the subject comes after the verb (inversion), and so where the word goes. For a "fill" item, explain the form in one sentence. Then write "correct" so it follows exactly what "why" says.\n` +
     `"wordBank": the words to choose from if the exercise gives a list, otherwise [].\n` +
     `"instructions": the exercise instructions in the original language, then a short English translation in parentheses.\n` +
-    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "why": "...", "correct": "...", "alternatives": [], "answers": [["..."]]}]}. Don't use em dashes.`;
+    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "words": [{"word": "...", "verb": "...", "subject": "..."}], "why": "...", "correct": "...", "alternatives": [], "answers": [["..."]]}]}. Don't use em dashes.`;
 
   async function saveNewExercise(raw, fallbackTitle, msgEl) {
     const ex = buildExercise(raw, fallbackTitle);
