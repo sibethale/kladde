@@ -276,6 +276,18 @@ button { cursor: pointer; }
 .drop.over, .page-body.over { border-color: var(--sea); background: var(--sea-soft); }
 .page-body.over { outline: 2px dashed var(--sea); outline-offset: -8px; }
 
+/* Profiles and sync */
+.profile-btn { max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
+.profile-btn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--sea); margin-right: 2px; flex: none; }
+.sync-state { font-family: var(--f-mono); font-size: 12px; color: var(--muted); max-width: 26em; }
+.sync-state.ok { color: var(--ok); }
+.sync-state.bad { color: var(--accent); }
+.prof-list { display: flex; flex-direction: column; gap: 6px; }
+.prof-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.prof-row[aria-current="true"] { border-color: var(--sea); background: var(--sea-soft); }
+.prof-row .nm { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+.prof-row .inp { flex: 1; min-width: 0; }
+
 /* Settings sheet */
 .sheet-bg { position: fixed; inset: 0; background: rgba(10,14,20,.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
 .sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; width: min(520px, 100%); max-height: 90vh; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
@@ -292,6 +304,8 @@ button { cursor: pointer; }
 
 <header class="top">
   <div class="brand"><h1><button type="button" id="homeBtn" class="brand-btn" title="Home: what Kladde is and how to turn on the AI tutor">Kladde<span class="dot">.</span></button></h1><span>Danish study notebook with an AI tutor</span></div>
+  <span class="sync-state" id="syncState" hidden></span>
+  <button class="btn profile-btn" id="profileBtn" type="button" title="Switch profile"></button>
   <label class="level" for="level">Level
     <select id="level">
       <option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option>
@@ -321,10 +335,31 @@ button { cursor: pointer; }
     <div class="row"><button class="btn primary" id="saveKey">Save</button><button class="btn" id="loadModels">Check key and list models</button><button class="btn" id="forgetKey">Remove key</button></div>
     <p class="note-msg" id="keyMsg"></p>
     <p>Your key is saved only in this browser on this device and is sent only to the AI service you picked. Don't use the app with your key on a shared computer. Free services may have their own privacy terms, so avoid putting private information in your notes.</p>
+    <h3>Sync between devices</h3>
+    <p>Use Kladde on your laptop and phone with the same notes, exercises and words. They're saved in a private repository in your GitHub account that only you can see. <a href="https://github.com/sibethale/kladde#sync-between-devices" target="_blank" rel="noopener">How to set it up</a></p>
+    <label for="ghToken">GitHub key
+      <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+    </label>
+    <label for="ghRepo">Private repository
+      <input type="text" id="ghRepo" placeholder="your-github-name/kladde-data" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="row"><button class="btn primary" id="ghConnect">Connect</button><button class="btn" id="ghSyncNow">Sync now</button><button class="btn" id="ghDisconnect">Disconnect</button></div>
+    <p class="note-msg" id="ghMsg"></p>
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.11</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.12</span><button class="btn" id="closeSettings">Close</button></div>
+  </div>
+</div>
+<div class="sheet-bg" id="profiles" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="profTitle">
+    <h2 id="profTitle">Profiles</h2>
+    <p>Each profile has its own notes, exercises and Vocab bank. Your AI key, level and other settings are shared. If sync is on, every profile is synced too.</p>
+    <div class="prof-list" id="profList"></div>
+    <h3>Add a profile</h3>
+    <div class="row wrap"><input class="inp" id="profName" placeholder="Name, e.g. Søren or Modul 3" maxlength="40"><button class="btn primary" id="profAdd">Add and open</button></div>
+    <p class="note-msg" id="profMsg"></p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="profClose">Close</button></div>
   </div>
 </div>
 <div class="banner" id="banner" hidden></div>
@@ -569,17 +604,23 @@ button { cursor: pointer; }
   function banner(text) { const b = $("#banner"); b.textContent = text; b.hidden = !text; }
 
   // ---------- stores ----------
-  // Saves notes and words in this browser (localStorage).
-  function localStore() {
-    const load = (k) => { try { return new Map(Object.entries(JSON.parse(localStorage.getItem(k) || "{}"))); } catch { return new Map(); } };
-    let n = load("kladde-notes"), v = load("kladde-vocab"), x = load("kladde-exercises"), ok = true;
-    const persist = () => {
+  // Saves notes, words and exercises in this browser (localStorage), one set per profile.
+  // Every saved item gets a change time (_t) and deleted items are remembered, so sync can merge devices.
+  function localStore(prefix, onChange) {
+    const K = (k) => prefix + k;
+    const load = (k) => { try { return new Map(Object.entries(JSON.parse(localStorage.getItem(K(k)) || "{}"))); } catch { return new Map(); } };
+    let n = load("notes"), v = load("vocab"), x = load("exercises"), del = load("deleted"), ok = true;
+    const persist = (silent) => {
       try {
-        localStorage.setItem("kladde-notes", JSON.stringify(Object.fromEntries(n)));
-        localStorage.setItem("kladde-vocab", JSON.stringify(Object.fromEntries(v)));
-        localStorage.setItem("kladde-exercises", JSON.stringify(Object.fromEntries(x)));
+        localStorage.setItem(K("notes"), JSON.stringify(Object.fromEntries(n)));
+        localStorage.setItem(K("vocab"), JSON.stringify(Object.fromEntries(v)));
+        localStorage.setItem(K("exercises"), JSON.stringify(Object.fromEntries(x)));
+        localStorage.setItem(K("deleted"), JSON.stringify(Object.fromEntries(del)));
       } catch { ok = false; throw { code: "storage" }; }
+      if (!silent) onChange?.();
     };
+    const stamp = (d) => { d._t = Date.now(); return d; };
+    const gone = (id) => del.set(id, Date.now());
     let nl = [], vl = [], xl = [];
     const emitN = () => nl.forEach((f) => f([...n.entries()].map(([id, d]) => ({ id, ...d }))));
     const emitV = () => vl.forEach((f) => f([...v.entries()].map(([id, d]) => ({ id, ...d }))));
@@ -589,22 +630,171 @@ button { cursor: pointer; }
       watchNotes: (cb) => { nl.push(cb); emitN(); },
       watchVocab: (cb) => { vl.push(cb); emitV(); },
       watchExercises: (cb) => { xl.push(cb); emitX(); },
-      saveNote: async (id, d) => { n.set(id, d); persist(); emitN(); },
-      deleteNote: async (id) => { n.delete(id); persist(); emitN(); },
-      addVocab: async (d) => { v.set(newId(), d); persist(); emitV(); },
-      deleteVocab: async (id) => { v.delete(id); persist(); emitV(); },
+      saveNote: async (id, d) => { n.set(id, stamp(d)); persist(); emitN(); },
+      deleteNote: async (id) => { n.delete(id); gone(id); persist(); emitN(); },
+      addVocab: async (d) => { v.set(newId(), stamp(d)); persist(); emitV(); },
+      deleteVocab: async (id) => { v.delete(id); gone(id); persist(); emitV(); },
       // Saving an exercise doesn't re-render the list, so dragging stays smooth
-      saveExercise: async (id, d, quiet) => { x.set(id, d); persist(); if (!quiet) emitX(); },
-      deleteExercise: async (id) => { x.delete(id); persist(); emitX(); },
-      exportAll: () => ({ app: "kladde", version: 2, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v), exercises: Object.fromEntries(x) }),
+      saveExercise: async (id, d, quiet) => { x.set(id, stamp(d)); persist(); if (!quiet) emitX(); },
+      deleteExercise: async (id) => { x.delete(id); gone(id); persist(); emitX(); },
+      exportAll: () => ({ app: "kladde", version: 3, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v), exercises: Object.fromEntries(x), deleted: Object.fromEntries(del) }),
       importAll: (data) => {
         for (const [id, d] of Object.entries(data.notes || {})) n.set(id, d);
         for (const [id, d] of Object.entries(data.vocab || {})) v.set(id, d);
         for (const [id, d] of Object.entries(data.exercises || {})) x.set(id, d);
         persist(); emitN(); emitV(); emitX();
       },
+      // Used by sync: swap in the merged data without counting it as a new change
+      replaceAll: (data) => {
+        n = new Map(Object.entries(data.notes || {})); v = new Map(Object.entries(data.vocab || {}));
+        x = new Map(Object.entries(data.exercises || {})); del = new Map(Object.entries(data.deleted || {}));
+        persist(true); emitN(); emitV(); emitX();
+      },
     };
   }
+
+  // ---------- Profiles ----------
+  // Each profile has its own notes, exercises and Vocab bank. "main" keeps the data from before profiles existed.
+  const slugify = (s) => String(s).toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa")
+    .normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").trim().replace(/[\s_]+/g, "-").replace(/-+/g, "-").slice(0, 40) || "profile";
+  const prettify = (slug) => slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
+  function getProfiles() {
+    let l = []; try { l = JSON.parse(lsGet("kladde-profiles") || "[]"); } catch {}
+    if (!Array.isArray(l)) l = [];
+    if (!l.some((p) => p.slug === "main")) l.unshift({ slug: "main", name: "Main" });
+    return l;
+  }
+  const setProfiles = (l) => lsSet("kladde-profiles", JSON.stringify(l));
+  const curProfile = () => { const s = lsGet("kladde-profile") || "main"; return getProfiles().some((p) => p.slug === s) ? s : "main"; };
+  const profileName = (slug) => getProfiles().find((p) => p.slug === slug)?.name || prettify(slug);
+  const profilePrefix = (slug) => (slug === "main" ? "kladde-" : `kladde-p-${slug}-`);
+
+  // ---------- Sync with a private GitHub repository ----------
+  const ghToken = () => lsGet("kladde-gh-token") || "";
+  const ghRepo = () => lsGet("kladde-gh-repo") || "";
+  const syncOn = () => !!(ghToken() && ghRepo());
+  async function gh(path, opts = {}, token) {
+    try {
+      return await fetch("https://api.github.com" + path, {
+        ...opts, cache: "no-store",
+        headers: { Authorization: "Bearer " + (token || ghToken()), Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(opts.headers || {}) },
+      });
+    } catch { throw { sync: "network" }; }
+  }
+  const b64encode = (str) => toBase64(new TextEncoder().encode(str));
+  const b64decode = (b) => new TextDecoder().decode(Uint8Array.from(atob(String(b).replace(/\s/g, "")), (c) => c.charCodeAt(0)));
+  const profilePath = (slug) => `/repos/${ghRepo()}/contents/profiles/${slug}.json`;
+  const ghFail = (r) => ({ sync: r.status === 401 ? "bad_key" : r.status === 403 ? "forbidden" : r.status === 404 ? "no_repo" : r.status === 409 || r.status === 422 ? "conflict" : "error" });
+  async function pullRemote(slug) {
+    const r = await gh(profilePath(slug));
+    if (r.status === 404) return null;
+    if (!r.ok) throw ghFail(r);
+    const j = await r.json();
+    let text = j.content ? b64decode(j.content) : "";
+    if (!text) {
+      // Files over 1 MB come without content, so fetch them raw
+      const r2 = await gh(profilePath(slug), { headers: { Accept: "application/vnd.github.raw+json" } });
+      if (!r2.ok) throw ghFail(r2);
+      text = await r2.text();
+    }
+    try { return { data: JSON.parse(text), sha: j.sha }; } catch { throw { sync: "bad_file" }; }
+  }
+  async function pushRemote(slug, data, sha) {
+    const r = await gh(profilePath(slug), {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: `Kladde sync (${slug})`, content: b64encode(JSON.stringify(data)), ...(sha ? { sha } : {}) }),
+    });
+    if (!r.ok) throw ghFail(r);
+  }
+  async function listRemoteProfiles() {
+    const r = await gh(`/repos/${ghRepo()}/contents/profiles`);
+    if (r.status === 404) return [];
+    if (!r.ok) throw ghFail(r);
+    const j = await r.json();
+    return (Array.isArray(j) ? j : []).map((f) => String(f.name || "")).filter((nm) => nm.endsWith(".json")).map((nm) => nm.slice(0, -5));
+  }
+  // Newest version of each item wins; deleted items stay deleted
+  const itemTime = (d) => d?._t || d?.updatedAt || d?.createdAt || 0;
+  function mergeData(a, b) {
+    const out = { app: "kladde", version: 3, notes: {}, vocab: {}, exercises: {}, deleted: {} };
+    for (const src of [a, b]) for (const [id, t] of Object.entries(src?.deleted || {})) out.deleted[id] = Math.max(out.deleted[id] || 0, +t || 0);
+    for (const c of ["notes", "vocab", "exercises"]) {
+      for (const src of [a, b]) for (const [id, d] of Object.entries(src?.[c] || {})) {
+        if (!out[c][id] || itemTime(d) > itemTime(out[c][id])) out[c][id] = d;
+      }
+      for (const id of Object.keys(out[c])) {
+        if (out.deleted[id] && (out.deleted[id] >= itemTime(out[c][id]) || id === "example-note")) delete out[c][id];
+      }
+    }
+    const cutoff = Date.now() - 180 * 864e5;
+    for (const [id, t] of Object.entries(out.deleted)) if (t < cutoff) delete out.deleted[id];
+    return out;
+  }
+  const signature = (d) => JSON.stringify(["notes", "vocab", "exercises", "deleted"].map((c) =>
+    Object.entries(d?.[c] || {}).map(([id, v]) => id + ":" + (c === "deleted" ? v : itemTime(v))).sort()));
+
+  let syncing = null, syncAgain = false, syncTimer = null, lastSync = 0;
+  function setSyncState(text, kind) { const el = $("#syncState"); el.textContent = text; el.className = "sync-state" + (kind ? " " + kind : ""); el.hidden = !text; }
+  const syncErr = (e) => ({
+    bad_key: "Sync stopped: GitHub didn't accept your key. Check it in Settings.",
+    forbidden: "Sync stopped: your GitHub key isn't allowed to change the repository.",
+    no_repo: "Sync stopped: couldn't find your private repository. Check Settings.",
+    network: "Couldn't reach GitHub. Trying again later.",
+    bad_file: "Sync stopped: the file on GitHub can't be read.",
+    conflict: "Sync clashed with another device. Trying again shortly.",
+  }[e?.sync] || "Sync failed. Trying again later.");
+  function scheduleSync() {
+    if (!syncOn()) return;
+    setSyncState("Not synced yet");
+    clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 4000);
+  }
+  function syncNow() {
+    if (!syncOn()) return Promise.resolve(false);
+    if (syncing) { syncAgain = true; return syncing; }
+    clearTimeout(syncTimer);
+    syncing = (async () => {
+      setSyncState("Syncing...");
+      let ok = false;
+      try {
+        // Save anything still being typed first
+        if (dirty) await flushSave();
+        if (exSaveT) saveEx(true);
+        const slug = curProfile();
+        for (let attempt = 0; ; attempt++) {
+          const remote = await pullRemote(slug);
+          // Adopt the profile's name from GitHub if this device only knew it by its short name
+          const list = getProfiles(), me = list.find((p) => p.slug === slug);
+          if (remote?.data?.name && me?.auto) { me.name = String(remote.data.name).slice(0, 40); delete me.auto; setProfiles(list); renderProfileBtn(); }
+          const local = store.exportAll();
+          const merged = mergeData(local, remote?.data);
+          merged.name = profileName(slug);
+          if (signature(merged) !== signature(local)) store.replaceAll(merged);
+          if (!remote || signature(merged) !== signature(remote.data) || remote.data.name !== merged.name) {
+            try { await pushRemote(slug, merged, remote?.sha); }
+            catch (e) { if (e.sync === "conflict" && attempt < 2) continue; throw e; }
+          }
+          break;
+        }
+        lastSync = Date.now(); ok = true;
+        setSyncState("Synced " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), "ok");
+      } catch (e) {
+        setSyncState(syncErr(e), "bad");
+        if (e?.sync === "network" || e?.sync === "conflict" || e?.sync === "error") { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 60000); }
+      } finally {
+        syncing = null;
+        if (syncAgain) { syncAgain = false; scheduleSync(); }
+      }
+      return ok;
+    })();
+    return syncing;
+  }
+  // Pick up changes from other devices when you come back to the page, and every few minutes
+  document.addEventListener("visibilitychange", () => {
+    if (!syncOn()) return;
+    if (document.visibilityState === "hidden" && syncTimer) syncNow();
+    if (document.visibilityState === "visible" && Date.now() - lastSync > 30000) syncNow();
+  });
+  setInterval(() => { if (syncOn() && document.visibilityState === "visible" && Date.now() - lastSync > 170000) syncNow(); }, 30000);
 
   // ---------- Claude API (direct from the browser) ----------
   // The AI services the app can use. "budget" is how much note/file text is sent at once.
@@ -1534,7 +1724,11 @@ button { cursor: pointer; }
     exercises = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     if (currentEx) {
       const fresh = exercises.find((e) => e.id === currentEx.id);
-      if (fresh) currentEx = fresh; else if (pageMode === "exercise") { currentEx = null; pageMode = "blank"; renderPage(); }
+      if (fresh) {
+        const changed = fresh._t !== currentEx._t;
+        currentEx = fresh;
+        if (changed && pageMode === "exercise" && !drag && !exBody.contains(document.activeElement)) renderExercise();
+      } else if (pageMode === "exercise") { currentEx = null; pageMode = "blank"; renderPage(); }
     }
     renderExList();
   }
@@ -2031,7 +2225,7 @@ button { cursor: pointer; }
     $("#keyMsg").textContent = "";
   }
   function openSettings() {
-    $("#provider").value = provider(); fillSettings();
+    $("#provider").value = provider(); fillSettings(); fillSync();
     $("#backupMsg").textContent = "";
     $("#settings").hidden = false; $("#apiKey").focus();
   }
@@ -2058,6 +2252,101 @@ button { cursor: pointer; }
     } catch { msg.textContent = "Couldn't reach the service. Check your internet connection."; }
   };
   function closeSettings() { $("#settings").hidden = true; }
+  // ---------- Profile window ----------
+  function renderProfileBtn() { const b = $("#profileBtn"); b.textContent = profileName(curProfile()); b.title = "Profile: " + profileName(curProfile()) + ". Click to switch."; }
+  function renderProfiles() {
+    const cur = curProfile();
+    $("#profList").innerHTML = getProfiles().map((p) => `<div class="prof-row" data-slug="${esc(p.slug)}" aria-current="${p.slug === cur}">
+      <span class="nm">${esc(p.name)}</span>${p.slug === cur ? '<span class="note-msg">Open now</span>' : `<button class="btn small primary" type="button" data-pact="open">Open</button>`}
+      <button class="btn small" type="button" data-pact="rename">Rename</button></div>`).join("");
+  }
+  async function refreshRemoteProfiles() {
+    if (!syncOn()) return;
+    try {
+      const slugs = await listRemoteProfiles(), list = getProfiles();
+      let added = false;
+      for (const sl of slugs) if (!list.some((p) => p.slug === sl)) { list.push({ slug: sl, name: prettify(sl), auto: true }); added = true; }
+      if (added) { setProfiles(list); if (!$("#profiles").hidden) renderProfiles(); }
+    } catch {}
+  }
+  async function switchProfile(slug) {
+    $("#profMsg").textContent = "Saving and switching...";
+    if (dirty) await flushSave();
+    if (exSaveT) saveEx(true);
+    if (syncOn()) await syncNow();
+    lsSet("kladde-profile", slug);
+    location.reload();
+  }
+  $("#profileBtn").onclick = () => { renderProfiles(); $("#profMsg").textContent = ""; $("#profiles").hidden = false; refreshRemoteProfiles(); };
+  $("#profClose").onclick = () => ($("#profiles").hidden = true);
+  $("#profiles").addEventListener("click", (e) => { if (e.target.id === "profiles") $("#profiles").hidden = true; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#profiles").hidden) $("#profiles").hidden = true; });
+  $("#profList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-pact]"); if (!b) return;
+    const row = b.closest(".prof-row"), slug = row.dataset.slug;
+    if (b.dataset.pact === "open") switchProfile(slug);
+    if (b.dataset.pact === "rename") {
+      row.querySelector(".nm").outerHTML = `<input class="inp" id="profRename" maxlength="40" value="${esc(profileName(slug))}" aria-label="New name">`;
+      b.textContent = "Save"; b.dataset.pact = "saveName";
+      const inp = $("#profRename"); inp.focus(); inp.select();
+      inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") b.click(); });
+    } else if (b.dataset.pact === "saveName") {
+      const nm = $("#profRename").value.trim();
+      if (nm) { const list = getProfiles(), p = list.find((x) => x.slug === slug); p.name = nm; delete p.auto; setProfiles(list); renderProfileBtn(); if (slug === curProfile()) scheduleSync(); }
+      renderProfiles();
+    }
+  });
+  $("#profAdd").onclick = () => {
+    const nm = $("#profName").value.trim(), msg = $("#profMsg");
+    if (!nm) { msg.textContent = "Type a name first."; return; }
+    const list = getProfiles();
+    if (list.some((p) => p.name.toLowerCase() === nm.toLowerCase())) { msg.textContent = "There's already a profile with that name."; return; }
+    let slug = slugify(nm), k = 2;
+    while (list.some((p) => p.slug === slug)) slug = slugify(nm) + "-" + k++;
+    list.push({ slug, name: nm }); setProfiles(list);
+    switchProfile(slug);
+  };
+  $("#profName").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#profAdd").click(); });
+
+  // ---------- Sync settings ----------
+  function fillSync() {
+    $("#ghToken").value = ghToken(); $("#ghRepo").value = ghRepo();
+    $("#ghSyncNow").hidden = $("#ghDisconnect").hidden = !syncOn();
+    $("#ghMsg").textContent = syncOn() ? `Connected to ${ghRepo()}. Your notes sync automatically.` : "";
+  }
+  $("#ghConnect").onclick = async () => {
+    const msg = $("#ghMsg"), tok = $("#ghToken").value.trim();
+    let repo = $("#ghRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "").replace(/\/+$/, "");
+    if (!tok) { msg.textContent = "Paste your GitHub key first."; return; }
+    if (!/^(github_pat_|ghp_)/.test(tok)) { msg.textContent = "That doesn't look like a GitHub key. It should start with github_pat_"; return; }
+    msg.textContent = "Checking your key...";
+    try {
+      const u = await gh("/user", {}, tok);
+      if (u.status === 401) { msg.textContent = "GitHub didn't accept that key. Check that you copied all of it, and that it hasn't expired."; return; }
+      if (!u.ok) { msg.textContent = "Couldn't check the key right now. Try again in a moment."; return; }
+      const login = (await u.json()).login;
+      if (!repo) repo = `${login}/kladde-data`;
+      else if (!repo.includes("/")) repo = `${login}/${repo}`;
+      const r = await gh(`/repos/${repo}`, {}, tok);
+      if (r.status === 404) { msg.textContent = `Couldn't find ${repo}. Check that the repository exists and that your key was given access to it.`; return; }
+      if (!r.ok) { msg.textContent = "Couldn't reach the repository. Try again in a moment."; return; }
+      if (!(await r.json()).private) { msg.textContent = `${repo} is public, so anyone could read your notes. Make it private on GitHub first, then click Connect again.`; return; }
+      lsSet("kladde-gh-token", tok); lsSet("kladde-gh-repo", repo);
+      $("#ghRepo").value = repo;
+      msg.textContent = "Connected. Syncing your notes...";
+      await refreshRemoteProfiles();
+      const ok = await syncNow();
+      fillSync();
+      msg.textContent = ok ? `Connected to ${repo}. Your notes, exercises and words now sync automatically.` : $("#syncState").textContent;
+    } catch (e) { msg.textContent = e?.sync ? syncErr(e) : "Something went wrong. Try again."; }
+  };
+  $("#ghSyncNow").onclick = async () => { $("#ghMsg").textContent = "Syncing..."; const ok = await syncNow(); $("#ghMsg").textContent = ok ? "Synced." : $("#syncState").textContent; };
+  $("#ghDisconnect").onclick = () => {
+    try { localStorage.removeItem("kladde-gh-token"); } catch {}
+    clearTimeout(syncTimer); setSyncState("");
+    fillSync(); $("#ghMsg").textContent = "Sync is off on this device. Your notes stay here, and the copy on GitHub stays too.";
+  };
+
   // ---------- Home page ----------
   function renderHome() {
     const da = (lsGet("kladde-home-lang") || "en") === "da";
@@ -2122,10 +2411,11 @@ button { cursor: pointer; }
 
   async function boot() {
     renderPage(); renderNoteList(); renderVocab(); renderChat();
-    store = localStore();
+    store = localStore(profilePrefix(curProfile()), scheduleSync);
     sample = apiSample();
+    renderProfileBtn();
     // First visit: add one example note so there's something to try.
-    if (!lsGet("kladde-seeded")) {
+    if (!lsGet("kladde-seeded") && curProfile() === "main") {
       lsSet("kladde-seeded", "1");
       try {
         await store.saveNote("example-note", {
@@ -2138,6 +2428,7 @@ button { cursor: pointer; }
     store.watchVocab((list) => { vocab = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); renderVocab(); });
     store.watchExercises(onExercises);
     if (getKey() && getModel()) aiOnFn(); else aiOff("Welcome! Open Settings and connect an AI service to turn on the tutor. Groq is free. Your notes work without it.");
+    if (syncOn()) { syncNow(); refreshRemoteProfiles(); }
   }
   boot();
 })();
