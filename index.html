@@ -304,7 +304,7 @@ button { cursor: pointer; }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:flex-end"><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.8</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="banner" id="banner" hidden></div>
@@ -349,6 +349,7 @@ button { cursor: pointer; }
           <button class="btn primary" id="exCheck">Check answers</button>
           <button class="btn" id="exShowAll">Show all answers</button>
           <button class="btn" id="exReset">Start again</button>
+          <button class="btn ai" id="exFix" title="Work out the answers again using the Danish word-order rules">Fix answer key</button>
           <span class="score" id="exScore" aria-live="polite"></span>
           <span class="spacer"></span>
           <span id="exDelWrap"></span>
@@ -1299,6 +1300,58 @@ button { cursor: pointer; }
     return s + ".";
   }
 
+  const wordKey = (w) => tokenize(w).map(normW).join(" ");
+  // Uses the verb/subject info to place each adverb by the rules
+  function applyRules(item, words) {
+    const infos = Array.isArray(words) ? words.filter(Boolean).slice() : [];
+    item.chips.forEach((c) => {
+      if (c.rule || !ADVS.has(wordKey(c.word))) return;
+      const idx = infos.findIndex((x) => wordKey(String(x.word || "")) === wordKey(c.word));
+      const info = idx >= 0 ? infos.splice(idx, 1)[0] : null;
+      const r = info ? ruleGap(item.tokens, c, info) : null;
+      if (r) { c.answers = [r.g]; c.rule = true; c.ruleWhy = ruleWhy(c.word, r); }
+    });
+  }
+  // Fills in answers from the AI's own sentence for any word the rules didn't place
+  function finishItem(item) {
+    item.chips.forEach((c) => { if (!c.rule) c.answers = []; });
+    [item.correct, ...(item.alternatives || [])].filter(Boolean).forEach((sentence) => {
+      const g = answerGaps(item.tokens, item.chips, sentence);
+      if (g) g.forEach((x, i) => { if (!item.chips[i].rule && !item.chips[i].answers.includes(x)) item.chips[i].answers.push(x); });
+    });
+    item.auto = item.chips.length > 0 && item.chips.every((c) => c.answers.length);
+    item.why = item.chips.every((c) => c.rule) ? item.chips.map((c) => c.ruleWhy).join(" ") : (item.aiWhy ?? item.why);
+  }
+  const needsRules = (it) => it.chips.some((c) => !c.rule && ADVS.has(wordKey(c.word)));
+  // A second, simpler question to the AI: just the verb and subject for each word in brackets
+  async function ensureRules(ex, all) {
+    if (ex.type !== "place" || provider() === "claude") return 0;
+    if (all) ex.items.forEach((it) => it.chips.forEach((c) => { c.rule = false; delete c.ruleWhy; }));
+    const need = ex.items.map((_, i) => i).filter((i) => needsRules(ex.items[i]));
+    if (!need.length) return 0;
+    let res;
+    try {
+      res = await sample.json(
+        `For each numbered Danish sentence below, look at every word in parentheses. Don't move any words. For each word in parentheses, give the finite verb of the clause it belongs to (the conjugated verb in present or past tense, never an infinitive or participle), copied exactly as written, one word only, and the subject of that clause, copied exactly as written.
+` +
+        `Reply with only JSON: [{"n": 1, "words": [{"word": "ikke", "verb": "ved", "subject": "Jeg"}]}]
+
+` +
+        need.map((i) => `${i + 1}. ${ex.items[i].given}`).join("\n"),
+        { maxTokens: 4000 }
+      );
+    } catch { return 0; }
+    let fixed = 0;
+    for (const r of Array.isArray(res) ? res : []) {
+      const i = Number(r?.n) - 1;
+      if (!need.includes(i)) continue;
+      applyRules(ex.items[i], r.words);
+      finishItem(ex.items[i]);
+      fixed++;
+    }
+    return fixed;
+  }
+
   function freshState(ex) {
     return ex.type === "place"
       ? { pos: ex.items.map((it) => it.chips.map((c) => c.start)), moved: ex.items.map((it) => it.chips.map(() => false)), shown: {}, checked: false }
@@ -1314,24 +1367,10 @@ button { cursor: pointer; }
         const { tokens, chips } = parsePlace(given);
         chips.forEach((c) => (c.answers = []));
         // With the free AI services, adverb positions come from the word-order rules, not the AI's own answer
-        const whys = [];
-        if (provider() !== "claude") {
-          const infos = Array.isArray(it.words) ? it.words.filter(Boolean).slice() : [];
-          chips.forEach((c) => {
-            if (!ADVS.has(tokenize(c.word).map(normW).join(" "))) return;
-            const idx = infos.findIndex((x) => tokenize(String(x.word || "")).map(normW).join(" ") === tokenize(c.word).map(normW).join(" "));
-            const info = idx >= 0 ? infos.splice(idx, 1)[0] : null;
-            const r = info ? ruleGap(tokens, c, info) : null;
-            if (r) { c.answers = [r.g]; c.rule = true; whys.push(ruleWhy(c.word, r)); }
-          });
-        }
-        [it.correct, ...(Array.isArray(it.alternatives) ? it.alternatives : [])].filter(Boolean).forEach((sentence) => {
-          const g = answerGaps(tokens, chips, sentence);
-          if (g) g.forEach((x, i) => { if (!chips[i].rule && !chips[i].answers.includes(x)) chips[i].answers.push(x); });
-        });
-        const auto = chips.length > 0 && chips.every((c) => c.answers.length);
-        const why = whys.length === chips.length ? whys.join(" ") : String(it.why || "");
-        return { given, correct: String(it.correct || ""), why, tokens, chips, auto };
+        const item = { given, correct: String(it.correct || ""), alternatives: Array.isArray(it.alternatives) ? it.alternatives.map(String) : [], aiWhy: String(it.why || ""), why: String(it.why || ""), tokens, chips, auto: false };
+        if (provider() !== "claude") applyRules(item, it.words);
+        finishItem(item);
+        return item;
       }
       const parts = given.split(/_{2,}/);
       const answers = parts.slice(1).map((_, b) => {
@@ -1478,6 +1517,7 @@ button { cursor: pointer; }
     const ex = currentEx; if (!ex) return;
     const body = $("#exBody"), top = body.scrollTop;
     if (document.activeElement !== $("#exTitle")) $("#exTitle").value = ex.title || "";
+    $("#exFix").hidden = !(ex.type === "place" && provider() !== "claude");
     let html = ex.instructions ? `<div class="ex-ins" lang="da">${esc(ex.instructions)}</div>` : "";
     if (ex.type === "place") {
       html += '<p class="note-msg">Drag each word in brackets to where it belongs. On a phone, tap the word and then tap the spot. You can also use the arrow keys.</p>';
@@ -1643,6 +1683,17 @@ button { cursor: pointer; }
 
   $("#exCheck").onclick = () => { if (!currentEx) return; currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
   $("#exShowAll").onclick = () => { if (!currentEx) return; currentEx.items.forEach((_, i) => (currentEx.state.shown[i] = true)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exFix").onclick = async () => {
+    const ex = currentEx; if (!ex) return;
+    if (!aiOn) { openSettings(); return; }
+    const btn = $("#exFix"); btn.disabled = true; btn.textContent = "Checking...";
+    try {
+      const n = await ensureRules(ex, true);
+      ex.items.forEach(finishItem);
+      saveEx(true); renderExercise(); renderExList();
+      setStatus(n ? "Answer key fixed" : "Couldn't check this one", n ? "ok" : "bad");
+    } finally { btn.textContent = "Fix answer key"; if (aiOn) btn.disabled = false; }
+  };
   $("#exReset").onclick = () => { if (!currentEx) return; currentEx.state = freshState(currentEx); sel = null; saveEx(true); renderExercise(); renderExList(); };
   $("#exTitle").addEventListener("input", () => { if (!currentEx) return; currentEx.title = $("#exTitle").value; saveEx(); clearTimeout(exListT); exListT = setTimeout(renderExList, 500); });
   let exListT = null;
@@ -1680,6 +1731,7 @@ button { cursor: pointer; }
   async function saveNewExercise(raw, fallbackTitle, msgEl) {
     const ex = buildExercise(raw, fallbackTitle);
     if (!ex.items.length) throw { msg: "Couldn't find any sentences to practise in that. Check that the exercise sentences are included, then try again." };
+    if (ex.items.some(needsRules)) { msgEl.textContent = "Checking the answers with the Danish word-order rules..."; await ensureRules(ex); }
     ex.id = "x" + newId().slice(1); ex.createdAt = ex.updatedAt = Date.now();
     await store.saveExercise(ex.id, ex);
     msgEl.textContent = "";
