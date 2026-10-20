@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kladde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: three panes like an open study desk. Notes shelf | the page you write on | a tutor at your elbow. Stacks to tabbed panes on phones. */
+:root {
+  --paper: #F3F5F8;
+  --surface: #FFFFFF;
+  --ink: #17202B;
+  --muted: #5A6575;
+  --line: #DCE1E8;
+  --accent: #B3263A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F7E4E7;
+  --sea: #2C5878;
+  --sea-soft: #E2EBF2;
+  --ok: #2E7650;
+  --warn: #9A5B0B;
+  --shadow: 0 1px 2px rgba(23,32,43,.06), 0 4px 16px rgba(23,32,43,.05);
+  --f-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11151B; --surface: #192029; --ink: #E5E9EF; --muted: #98A2B0; --line: #2A333E;
+    --accent: #E35B6E; --accent-ink: #1A0D10; --accent-soft: #3A1E24; --sea: #84B3D3; --sea-soft: #1B2935;
+    --ok: #6CC495; --warn: #E0A85A; --shadow: 0 1px 2px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11151B; --surface: #192029; --ink: #E5E9EF; --muted: #98A2B0; --line: #2A333E;
+  --accent: #E35B6E; --accent-ink: #1A0D10; --accent-soft: #3A1E24; --sea: #84B3D3; --sea-soft: #1B2935;
+  --ok: #6CC495; --warn: #E0A85A; --shadow: 0 1px 2px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; overflow: hidden;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+
+/* Header */
+.top { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-family: var(--f-display); font-weight: 600; font-size: 24px; margin: 0; letter-spacing: -.01em; }
+.brand h1 .dot { color: var(--accent); }
+.brand span { color: var(--muted); font-size: 13px; }
+.level { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.level select { font-family: var(--f-mono); font-size: 13px; text-transform: none; letter-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.status { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 9ch; text-align: right; }
+.status.ok { color: var(--ok); }
+.status.bad { color: var(--accent); }
+
+.banner { background: var(--sea-soft); color: var(--ink); border-radius: var(--r); padding: 8px 12px; font-size: 13px; margin-bottom: 10px; }
+
+/* Main grid */
+.desk { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr) 370px; gap: 14px; padding-bottom: 14px; }
+.pane { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Shelf */
+.shelf-head { padding: 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+.tabs { display: flex; gap: 4px; background: var(--paper); padding: 3px; border-radius: 8px; }
+.tabs button { flex: 1; border: 0; background: transparent; padding: 6px 8px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); display: inline-flex; justify-content: center; gap: 6px; align-items: center; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.count { font-family: var(--f-mono); font-size: 11px; background: var(--accent-soft); color: var(--accent); border-radius: 10px; padding: 0 6px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.search { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--paper); border-radius: 6px; padding: 6px 9px; font-size: 13px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.sea { background: var(--sea); border-color: var(--sea); color: var(--surface); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.list { overflow-y: auto; flex: 1; padding: 6px; }
+.note-item { width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; }
+.note-item:hover { background: var(--paper); }
+.note-item[aria-current="true"] { background: var(--accent-soft); }
+.note-item b { font-family: var(--f-display); font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-item small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { color: var(--muted); font-size: 13px; padding: 14px 10px; }
+.vocab-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.vocab-item .da { font-family: var(--f-display); font-size: 16px; font-weight: 600; }
+.vocab-item .en { color: var(--muted); font-size: 13px; grid-column: 1; }
+.vocab-item .ex { font-size: 12px; color: var(--muted); font-style: italic; grid-column: 1; }
+.x { border: 0; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px; grid-row: 1 / span 3; grid-column: 2; align-self: start; }
+.x:hover { color: var(--accent); background: var(--accent-soft); }
+.shelf-foot { padding: 10px 12px; border-top: 1px solid var(--line); }
+
+/* Page (editor) */
+.page-head { padding: 12px 16px 8px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--line); }
+.title-in { font-family: var(--f-display); font-size: 26px; font-weight: 600; border: 0; background: transparent; padding: 0; width: 100%; letter-spacing: -.01em; }
+.title-in:focus { outline: none; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.actions .spacer { flex: 1; }
+.del-confirm { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--accent); }
+.page-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+.editor { min-height: 220px; outline: none; font-size: 16px; line-height: 1.7; max-width: 70ch; }
+.editor:empty::before { content: attr(data-placeholder); color: var(--muted); }
+.editor h1, .editor h2, .editor h3 { font-family: var(--f-display); font-weight: 600; line-height: 1.25; margin: 1.1em 0 .4em; text-wrap: balance; }
+.editor h1 { font-size: 26px; } .editor h2 { font-size: 21px; } .editor h3 { font-size: 18px; }
+.editor p { margin: 0 0 .7em; }
+.editor ul, .editor ol { padding-left: 1.4em; margin: 0 0 .7em; }
+.editor > :first-child { margin-top: 0; }
+.fmt { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; padding: 6px 16px; border-top: 1px solid var(--line); background: var(--surface); }
+.fmt button { border: 0; background: transparent; border-radius: 5px; min-width: 30px; height: 30px; padding: 0 6px; font-size: 13px; color: var(--muted); }
+.fmt button:hover { background: var(--paper); color: var(--ink); }
+.fmt .sep { width: 1px; height: 18px; background: var(--line); margin: 0 6px; }
+.fmt .char { font-family: var(--f-display); font-size: 17px; color: var(--ink); }
+.fmt .spacer { flex: 1; }
+
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: var(--paper); max-width: 70ch; display: flex; flex-direction: column; gap: 10px; }
+.card-head { display: flex; align-items: center; gap: 8px; }
+.card-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; color: var(--sea); margin-right: auto; }
+.issue { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.issue:first-of-type { border-top: 0; }
+.issue .pair { font-size: 15px; }
+.issue del { color: var(--accent); text-decoration-thickness: 1.5px; }
+.issue ins { color: var(--ok); text-decoration: none; font-weight: 600; }
+.issue .why { color: var(--muted); font-size: 13px; grid-column: 1; }
+.issue .btn { grid-row: 1 / span 2; grid-column: 2; align-self: center; }
+.issue.done { opacity: .5; }
+.translation { white-space: pre-wrap; font-size: 15px; }
+.gen { display: flex; flex-direction: column; gap: 8px; }
+.gen label { font-size: 13px; color: var(--muted); }
+.gen .row input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 3px 10px; font-size: 12px; }
+.chip:hover { border-color: var(--sea); color: var(--sea); }
+.vpick { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); }
+.vpick:first-of-type { border-top: 0; }
+.vpick .da { font-family: var(--f-display); font-weight: 600; font-size: 16px; }
+.vpick .en { color: var(--muted); font-size: 13px; }
+.muted { color: var(--muted); }
+.note-msg { font-size: 13px; color: var(--muted); }
+.note-msg.bad { color: var(--accent); }
+.nothing { margin: auto; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 40px 16px; }
+.nothing h2 { font-family: var(--f-display); color: var(--ink); font-size: 24px; margin: 0; font-weight: 600; }
+
+/* Tutor */
+.tutor-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--sea); color: var(--surface); display: grid; place-items: center; font-family: var(--f-display); font-weight: 600; font-size: 17px; flex: none; }
+.tutor-head b { display: block; font-size: 14px; }
+.tutor-head small { color: var(--muted); font-size: 12px; }
+.tutor-head .btn { margin-left: auto; }
+.chat { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 92%; padding: 9px 12px; border-radius: 12px; font-size: 14px; overflow-wrap: anywhere; }
+.msg.ai { background: var(--sea-soft); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.me { background: var(--accent-soft); align-self: flex-end; border-bottom-right-radius: 4px; white-space: pre-wrap; }
+.msg p { margin: 0 0 .5em; } .msg p:last-child { margin-bottom: 0; }
+.msg ul, .msg ol { margin: 0 0 .5em; padding-left: 1.3em; }
+.msg h4 { margin: .4em 0 .3em; font-size: 14px; }
+.msg code { font-family: var(--f-mono); font-size: 12.5px; }
+.msg.thinking { color: var(--muted); font-style: italic; }
+.quick { padding: 10px 14px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.quick button { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; }
+.quick button:hover { border-color: var(--sea); }
+.composer { padding: 10px 14px 14px; display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea { flex: 1; min-width: 0; resize: none; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 9px 11px; max-height: 140px; font-size: 14px; }
+
+/* Mobile pane switcher */
+.switcher { display: none; }
+@media (max-width: 980px) {
+  .desk { grid-template-columns: 220px minmax(0,1fr); }
+  .desk .tutor { display: none; }
+  body.view-tutor .desk .tutor { display: flex; }
+  body.view-tutor .desk .page { display: none; }
+  .switcher { display: flex; }
+}
+@media (max-width: 680px) {
+  .desk { grid-template-columns: minmax(0,1fr); }
+  .desk .shelf, .desk .page, .desk .tutor { display: none; }
+  body.view-notes .desk .shelf { display: flex; }
+  body.view-page .desk .page { display: flex; }
+  body.view-tutor .desk .tutor { display: flex; }
+  .brand span { display: none; }
+  .page-body { padding: 14px 14px 20px; }
+  .quick { grid-template-columns: 1fr; }
+}
+.switcher { gap: 4px; background: var(--surface); border: 1px solid var(--line); padding: 3px; border-radius: 10px; margin-bottom: 10px; }
+.switcher button { flex: 1; border: 0; background: transparent; padding: 7px; border-radius: 7px; font-weight: 500; color: var(--muted); }
+.switcher button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+@media (min-width: 681px) { .switcher .only-small { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* Settings sheet */
+.sheet-bg { position: fixed; inset: 0; background: rgba(10,14,20,.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; width: min(520px, 100%); max-height: 90vh; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.sheet h2 { font-family: var(--f-display); font-size: 22px; margin: 0; font-weight: 600; }
+.sheet h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--sea); margin: 6px 0 0; }
+.sheet label { font-size: 13px; font-weight: 500; display: flex; flex-direction: column; gap: 5px; }
+.sheet input[type=password], .sheet input[type=text], .sheet select { border: 1px solid var(--line); background: var(--paper); border-radius: 6px; padding: 8px 10px; font-family: var(--f-mono); font-size: 13px; width: 100%; }
+.sheet p { margin: 0; font-size: 13px; color: var(--muted); }
+.sheet .row { flex-wrap: wrap; }
+.sheet a { color: var(--sea); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><h1>Kladde<span class="dot">.</span></h1><span>Danish study notebook with a Claude tutor</span></div>
+  <label class="level" for="level">Level
+    <select id="level">
+      <option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option>
+    </select>
+  </label>
+  <div class="status" id="status" aria-live="polite"></div>
+  <button class="btn" id="openSettings">Settings</button>
+</header>
+<div class="sheet-bg" id="settings" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Settings</h2>
+    <h3>Claude connection</h3>
+    <p>The AI features need a Claude API key. Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (you'll need to add some credit there). Your key is saved only in this browser on this device and is sent only to Anthropic. Don't use this app with your key on a shared computer.</p>
+    <label for="apiKey">API key
+      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    </label>
+    <label for="model">Model
+      <select id="model">
+        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (best balance)</option>
+        <option value="claude-haiku-5-5">Claude Haiku 5.5 (faster and cheaper)</option>
+        <option value="claude-opus-5-5">Claude Opus 5.5 (smartest, costs most)</option>
+      </select>
+    </label>
+    <div class="row"><button class="btn primary" id="saveKey">Save</button><button class="btn" id="forgetKey">Remove key</button><span class="note-msg" id="keyMsg"></span></div>
+    <h3>Backup</h3>
+    <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
+    <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="closeSettings">Close</button></div>
+  </div>
+</div>
+<div class="banner" id="banner" hidden></div>
+<nav class="switcher" aria-label="Panes">
+  <button class="only-small" data-view="notes" aria-selected="false">Notes</button>
+  <button data-view="page" aria-selected="true">Note</button>
+  <button data-view="tutor" aria-selected="false">Tutor</button>
+</nav>
+
+<main class="desk">
+  <!-- Notes shelf -->
+  <section class="pane shelf" aria-label="Notes and vocabulary">
+    <div class="shelf-head">
+      <div class="tabs" role="tablist">
+        <button id="tabNotes" role="tab" aria-selected="true">Notes</button>
+        <button id="tabVocab" role="tab" aria-selected="false">Vocab bank <span class="count" id="vCount">0</span></button>
+      </div>
+      <div class="row" id="notesTools">
+        <input class="search" id="search" type="search" placeholder="Search notes">
+        <button class="btn primary" id="newNote">+ New</button>
+      </div>
+    </div>
+    <div class="list" id="noteList"></div>
+    <div class="list" id="vocabList" hidden></div>
+    <div class="shelf-foot" id="vocabFoot" hidden>
+      <button class="btn sea" id="quizVocab" style="width:100%;justify-content:center">Quiz me on these words</button>
+    </div>
+  </section>
+
+  <!-- The page -->
+  <section class="pane page" aria-label="Note">
+    <div id="noNote" class="nothing">
+      <h2>Open a note to start</h2>
+      <p>Write your Danish lesson notes here. The tutor reads along and can check grammar, translate, and quiz you.</p>
+      <button class="btn primary" id="newNote2">+ New note</button>
+    </div>
+    <div id="hasNote" hidden style="display:contents">
+      <div class="page-head">
+        <input class="title-in" id="title" aria-label="Note title" placeholder="Untitled note">
+        <div class="actions">
+          <button class="btn ai" id="btnGrammar">Grammar check</button>
+          <button class="btn ai" id="btnTranslate">Translate</button>
+          <button class="btn ai" id="btnVocab">Find vocabulary</button>
+          <button class="btn" id="btnSpeak" hidden>Read aloud</button>
+          <span class="spacer"></span>
+          <span id="delWrap"><button class="btn small" id="btnDelete">Delete</button></span>
+        </div>
+      </div>
+      <div class="page-body" id="pageBody">
+        <div class="editor" id="editor" contenteditable="true" spellcheck="false" lang="da" data-placeholder="Skriv her... Write your notes in Danish or English."></div>
+        <div class="card" id="genCard" hidden>
+          <div class="card-head"><h3>Empty note</h3></div>
+          <div class="gen">
+            <label for="genTopic">Ask Claude to build a lesson for you. What should it be about?</label>
+            <div class="row">
+              <input id="genTopic" placeholder="e.g. Past tense of common verbs">
+              <button class="btn primary ai" id="btnGen">Build lesson</button>
+            </div>
+            <div class="chips" id="genChips"></div>
+            <div class="note-msg" id="genMsg"></div>
+          </div>
+        </div>
+        <div id="results"></div>
+      </div>
+      <div class="fmt" id="fmt">
+        <button data-cmd="formatBlock" data-val="h2" title="Heading">H</button>
+        <button data-cmd="formatBlock" data-val="h3" title="Subheading" style="font-size:11px">H</button>
+        <button data-cmd="formatBlock" data-val="p" title="Normal text">¶</button>
+        <span class="sep"></span>
+        <button data-cmd="bold" title="Bold"><b>B</b></button>
+        <button data-cmd="italic" title="Italic"><i>I</i></button>
+        <button data-cmd="underline" title="Underline"><u>U</u></button>
+        <button data-cmd="insertUnorderedList" title="Bulleted list">• ≡</button>
+        <button data-cmd="insertOrderedList" title="Numbered list">1.</button>
+        <span class="sep"></span>
+        <button class="char" data-char="æ" title="Insert æ">æ</button>
+        <button class="char" data-char="ø" title="Insert ø">ø</button>
+        <button class="char" data-char="å" title="Insert å">å</button>
+        <button class="char" data-char="Æ" title="Insert Æ">Æ</button>
+        <button class="char" data-char="Ø" title="Insert Ø">Ø</button>
+        <button class="char" data-char="Å" title="Insert Å">Å</button>
+        <span class="spacer"></span>
+        <button class="btn small sea ai" id="btnAskSel" title="Ask the tutor about the selected text" style="color:var(--surface)">Ask tutor about selection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tutor -->
+  <section class="pane tutor" aria-label="Tutor">
+    <div class="tutor-head">
+      <div class="avatar">L</div>
+      <div><b>Lærer</b><small>Your Danish tutor, powered by Claude</small></div>
+      <button class="btn small" id="clearChat">New chat</button>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="quick" id="quick">
+      <button data-q="Explain the most important grammar points in my note, with short examples.">Explain the grammar</button>
+      <button data-q="Quiz me on the vocabulary from my note and my vocab bank. Ask one question at a time and wait for my answer.">Quiz me on vocabulary</button>
+      <button data-q="Give me the key takeaways from this note as a short list.">Key takeaways</button>
+      <button data-q="Give me 5 practice sentences at my level using words from my note. Write the Danish first, then the English translation on the next line.">Practice sentences</button>
+    </div>
+    <form class="composer" id="composer">
+      <textarea id="chatIn" rows="1" placeholder="Ask in Danish or English..."></textarea>
+      <button class="btn primary ai" id="chatSend" type="submit">Send</button>
+      <button class="btn" id="chatStop" type="button" hidden>Stop</button>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const newId = () => "n" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+  // ---------- state ----------
+  let store = null, sample = null, aiOn = false;
+  let notes = [], vocab = [], currentId = null, firstNotes = true;
+  let saveTimer = null, saving = false, dirty = false;
+  const chats = new Map(); // noteId -> [{role, content}]
+  let chatCtl = null;
+
+  const editor = $("#editor"), titleIn = $("#title"), statusEl = $("#status");
+  const levelSel = $("#level");
+  const savedLevel = lsGet("kladde-level"); if (savedLevel) levelSel.value = savedLevel;
+  levelSel.onchange = () => lsSet("kladde-level", levelSel.value);
+  const level = () => levelSel.value;
+
+  function setStatus(text, kind) { statusEl.textContent = text; statusEl.className = "status" + (kind ? " " + kind : ""); }
+  function banner(text) { const b = $("#banner"); b.textContent = text; b.hidden = !text; }
+
+  // ---------- stores ----------
+  // Saves notes and words in this browser (localStorage).
+  function localStore() {
+    const load = (k) => { try { return new Map(Object.entries(JSON.parse(localStorage.getItem(k) || "{}"))); } catch { return new Map(); } };
+    let n = load("kladde-notes"), v = load("kladde-vocab"), ok = true;
+    const persist = () => {
+      try {
+        localStorage.setItem("kladde-notes", JSON.stringify(Object.fromEntries(n)));
+        localStorage.setItem("kladde-vocab", JSON.stringify(Object.fromEntries(v)));
+      } catch { ok = false; throw { code: "storage" }; }
+    };
+    let nl = [], vl = [];
+    const emitN = () => nl.forEach((f) => f([...n.entries()].map(([id, d]) => ({ id, ...d }))));
+    const emitV = () => vl.forEach((f) => f([...v.entries()].map(([id, d]) => ({ id, ...d }))));
+    return {
+      get persistent() { return ok; },
+      watchNotes: (cb) => { nl.push(cb); emitN(); },
+      watchVocab: (cb) => { vl.push(cb); emitV(); },
+      saveNote: async (id, d) => { n.set(id, d); persist(); emitN(); },
+      deleteNote: async (id) => { n.delete(id); persist(); emitN(); },
+      addVocab: async (d) => { v.set(newId(), d); persist(); emitV(); },
+      deleteVocab: async (id) => { v.delete(id); persist(); emitV(); },
+      exportAll: () => ({ app: "kladde", version: 1, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v) }),
+      importAll: (data) => {
+        for (const [id, d] of Object.entries(data.notes || {})) n.set(id, d);
+        for (const [id, d] of Object.entries(data.vocab || {})) v.set(id, d);
+        persist(); emitN(); emitV();
+      },
+    };
+  }
+
+  // ---------- Claude API (direct from the browser) ----------
+  const getKey = () => lsGet("kladde-key") || "";
+  const getModel = () => lsGet("kladde-model") || "claude-sonnet-5-5";
+  function apiSample() {
+    async function call(input, opts = {}) {
+      const key = getKey();
+      if (!key) throw { code: "no_key" };
+      const messages = typeof input === "string" ? [{ role: "user", content: input }] : mergeTurns(input);
+      let res;
+      try {
+        res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          signal: opts.signal,
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": key,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+          },
+          body: JSON.stringify({ model: getModel(), max_tokens: opts.maxTokens || 4000, stream: true, messages }),
+        });
+      } catch (e) {
+        throw { code: e?.name === "AbortError" ? "cancelled" : "network" };
+      }
+      if (!res.ok) {
+        let detail = ""; try { detail = (await res.json())?.error?.message || ""; } catch {}
+        const code = res.status === 401 ? "bad_key" : res.status === 403 ? "forbidden" : res.status === 429 ? "rate_limited"
+          : res.status === 529 ? "overloaded" : res.status === 400 && /credit/i.test(detail) ? "no_credit" : res.status === 404 ? "bad_model" : "upstream_error";
+        throw { code, message: detail };
+      }
+      // Read the streamed answer piece by piece
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = "", text = "", stop = null;
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i;
+          while ((i = buf.indexOf("\n\n")) !== -1) {
+            const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+            const dataLine = chunk.split("\n").find((l) => l.startsWith("data:"));
+            if (!dataLine) continue;
+            let ev; try { ev = JSON.parse(dataLine.slice(5).trim()); } catch { continue; }
+            if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") {
+              text += ev.delta.text;
+              opts.onText?.({ text, delta: ev.delta.text });
+            } else if (ev.type === "message_delta") {
+              stop = ev.delta?.stop_reason || stop;
+            } else if (ev.type === "error") {
+              throw { code: ev.error?.type === "overloaded_error" ? "overloaded" : "upstream_error", text };
+            }
+          }
+        }
+      } catch (e) {
+        if (e?.name === "AbortError") throw { code: "cancelled", text };
+        if (e?.code) throw e;
+        throw { code: "network", text };
+      }
+      if (!text.trim()) throw { code: "empty_completion" };
+      return { text, truncated: stop === "max_tokens" };
+    }
+    // The API wants alternating user/assistant turns, so join back-to-back turns of the same role.
+    function mergeTurns(turns) {
+      const out = [];
+      for (const t of turns) {
+        const last = out[out.length - 1];
+        if (last && last.role === t.role) last.content += "\n\n" + t.content;
+        else out.push({ role: t.role, content: t.content });
+      }
+      return out;
+    }
+    call.json = async (input, opts = {}) => {
+      const prompt = (typeof input === "string" ? input : input.map((t) => t.content).join("\n\n")) + "\n\nReply with the JSON only, no other text.";
+      const { text, truncated } = await call(prompt, opts);
+      if (truncated) throw { code: "invalid_json", text };
+      const tries = [text, (text.match(/```(?:json)?\s*([\s\S]*?)```/) || [])[1]];
+      const s = text.search(/[\[{]/), e = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
+      if (s !== -1 && e > s) tries.push(text.slice(s, e + 1));
+      for (const t of tries) { if (!t) continue; try { return JSON.parse(t); } catch {} }
+      throw { code: "invalid_json", text };
+    };
+    return call;
+  }
+
+  // ---------- views (phones / tablets) ----------
+  function setView(v) {
+    document.body.classList.remove("view-notes", "view-page", "view-tutor");
+    document.body.classList.add("view-" + v);
+    document.querySelectorAll(".switcher button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === v)));
+  }
+  document.querySelectorAll(".switcher button").forEach((b) => (b.onclick = () => setView(b.dataset.view)));
+  setView("page");
+
+  // ---------- shelf ----------
+  function showShelf(which) {
+    const isNotes = which === "notes";
+    $("#tabNotes").setAttribute("aria-selected", String(isNotes));
+    $("#tabVocab").setAttribute("aria-selected", String(!isNotes));
+    $("#noteList").hidden = !isNotes; $("#notesTools").hidden = !isNotes;
+    $("#vocabList").hidden = isNotes; $("#vocabFoot").hidden = isNotes || !vocab.length;
+  }
+  $("#tabNotes").onclick = () => showShelf("notes");
+  $("#tabVocab").onclick = () => showShelf("vocab");
+  $("#search").oninput = renderNoteList;
+
+  function plain(html) { const d = document.createElement("div"); d.innerHTML = html || ""; return d.textContent.replace(/\s+/g, " ").trim(); }
+  function fmtDate(t) { if (!t) return ""; return new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short" }); }
+
+  function renderNoteList() {
+    const q = $("#search").value.trim().toLowerCase();
+    const list = $("#noteList");
+    const shown = notes.filter((n) => !q || (n.title + " " + plain(n.html)).toLowerCase().includes(q));
+    if (!notes.length) { list.innerHTML = '<div class="empty">No notes yet. Press <b>+ New</b> to start your first one.</div>'; return; }
+    if (!shown.length) { list.innerHTML = '<div class="empty">No notes match that search.</div>'; return; }
+    list.innerHTML = shown.map((n) => {
+      const preview = plain(n.html).slice(0, 80) || "Empty note";
+      return `<button class="note-item" data-id="${esc(n.id)}" aria-current="${n.id === currentId}"><b>${esc(n.title || "Untitled note")}</b><small>${esc(fmtDate(n.updatedAt))} · ${esc(preview)}</small></button>`;
+    }).join("");
+    list.querySelectorAll(".note-item").forEach((b) => (b.onclick = () => { openNote(b.dataset.id); setView("page"); }));
+  }
+
+  function renderVocab() {
+    $("#vCount").textContent = vocab.length;
+    const list = $("#vocabList");
+    $("#vocabFoot").hidden = $("#vocabList").hidden || !vocab.length;
+    if (!vocab.length) { list.innerHTML = '<div class="empty">No words saved yet. Open a note and press <b>Find vocabulary</b> to collect words from it.</div>'; return; }
+    list.innerHTML = vocab.map((v) => `<div class="vocab-item"><span class="da">${esc(v.da)}</span><button class="x" data-id="${esc(v.id)}" title="Remove word" aria-label="Remove ${esc(v.da)}">×</button><span class="en">${esc(v.en)}</span>${v.example ? `<span class="ex">${esc(v.example)}</span>` : ""}</div>`).join("");
+    list.querySelectorAll(".x").forEach((b) => (b.onclick = () => store.deleteVocab(b.dataset.id)));
+  }
+
+  // ---------- notes ----------
+  function onNotes(list) {
+    notes = list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    renderNoteList();
+    if (firstNotes && notes.length && !currentId) { firstNotes = false; openNote(notes[0].id); return; }
+    if (!currentId) return;
+    const n = notes.find((x) => x.id === currentId);
+    if (!n) { if (!saving && !dirty) { currentId = null; renderPage(); } return; }
+    // Another tab or device changed this note: update it unless you're mid-edit.
+    if (!dirty && !saving && document.activeElement !== editor && n.html !== editor.innerHTML) { editor.innerHTML = n.html || ""; updateGenCard(); }
+    if (!dirty && !saving && document.activeElement !== titleIn && n.title !== titleIn.value) titleIn.value = n.title || "";
+  }
+
+  async function openNote(id) {
+    if (currentId && dirty) await flushSave();
+    currentId = id;
+    const n = notes.find((x) => x.id === id);
+    titleIn.value = n?.title || "";
+    editor.innerHTML = n?.html || "";
+    $("#results").innerHTML = "";
+    resetDelete();
+    renderPage(); renderNoteList(); renderChat();
+  }
+
+  function renderPage() {
+    const has = !!currentId;
+    $("#noNote").hidden = has; $("#hasNote").hidden = !has;
+    $("#hasNote").style.display = has ? "contents" : "none";
+    updateGenCard();
+  }
+
+  async function createNote() {
+    if (currentId && dirty) await flushSave();
+    const id = newId(), now = Date.now();
+    const data = { title: "Untitled note", html: "", createdAt: now, updatedAt: now };
+    notes.unshift({ id, ...data });
+    await openNote(id);
+    setView("page");
+    titleIn.select(); titleIn.focus();
+    try { await store.saveNote(id, data); } catch { setStatus("Couldn't save", "bad"); }
+  }
+  $("#newNote").onclick = createNote; $("#newNote2").onclick = createNote;
+
+  function scheduleSave() {
+    dirty = true; setStatus("Editing");
+    clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 900);
+  }
+  async function flushSave() {
+    clearTimeout(saveTimer);
+    if (!currentId || !dirty) return;
+    if (saving) { saveTimer = setTimeout(flushSave, 400); return; }
+    saving = true; dirty = false;
+    const id = currentId, n = notes.find((x) => x.id === id);
+    const data = { title: titleIn.value.trim() || "Untitled note", html: editor.innerHTML, createdAt: n?.createdAt || Date.now(), updatedAt: Date.now() };
+    if (n) Object.assign(n, data);
+    setStatus("Saving...");
+    try {
+      await store.saveNote(id, data);
+      setStatus(store.persistent ? "Saved" : "Not saved", store.persistent ? "ok" : "bad");
+    } catch (e) {
+      dirty = true;
+      setStatus(e?.code === "quota_exceeded" ? "Note too big to save" : "Couldn't save", "bad");
+    } finally { saving = false; renderNoteList(); }
+  }
+  editor.addEventListener("input", () => { scheduleSave(); updateGenCard(); });
+  titleIn.addEventListener("input", scheduleSave);
+  titleIn.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); editor.focus(); } });
+  editor.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const text = e.clipboardData?.getData("text/plain") || "";
+    document.execCommand("insertText", false, text);
+  });
+  window.addEventListener("beforeunload", () => { if (dirty) flushSave(); });
+
+  // Delete with an inline confirmation
+  function resetDelete() { $("#delWrap").innerHTML = '<button class="btn small" id="btnDelete">Delete</button>'; $("#btnDelete").onclick = askDelete; }
+  function askDelete() {
+    $("#delWrap").innerHTML = '<span class="del-confirm">Delete this note? <button class="btn small primary" id="delYes">Delete</button><button class="btn small" id="delNo">Keep</button></span>';
+    $("#delNo").onclick = resetDelete;
+    $("#delYes").onclick = async () => {
+      const id = currentId; clearTimeout(saveTimer); dirty = false;
+      notes = notes.filter((n) => n.id !== id); currentId = null;
+      chats.delete(id);
+      renderPage(); renderNoteList(); renderChat();
+      try { await store.deleteNote(id); setStatus("Deleted"); } catch { setStatus("Couldn't delete", "bad"); }
+      if (notes.length) openNote(notes[0].id);
+    };
+  }
+  resetDelete();
+
+  // Formatting toolbar
+  document.querySelectorAll("#fmt button").forEach((b) => b.addEventListener("mousedown", (e) => e.preventDefault()));
+  document.querySelectorAll("#fmt [data-cmd]").forEach((b) => (b.onclick = () => {
+    editor.focus();
+    document.execCommand(b.dataset.cmd, false, b.dataset.val || null);
+    scheduleSave();
+  }));
+  document.querySelectorAll("#fmt [data-char]").forEach((b) => (b.onclick = () => {
+    if (!editor.contains(document.getSelection()?.anchorNode)) editor.focus();
+    document.execCommand("insertText", false, b.dataset.char);
+  }));
+
+  // Read aloud with a Danish voice, where the browser has one
+  const synth = "speechSynthesis" in window ? window.speechSynthesis : null;
+  if (synth) {
+    $("#btnSpeak").hidden = false;
+    $("#btnSpeak").onclick = () => {
+      if (synth.speaking) { synth.cancel(); $("#btnSpeak").textContent = "Read aloud"; return; }
+      const sel = String(document.getSelection() || "").trim();
+      const u = new SpeechSynthesisUtterance(sel && editor.contains(document.getSelection().anchorNode) ? sel : editor.innerText);
+      u.lang = "da-DK";
+      const v = synth.getVoices().find((x) => x.lang && x.lang.toLowerCase().startsWith("da"));
+      if (v) u.voice = v;
+      u.onend = u.onerror = () => ($("#btnSpeak").textContent = "Read aloud");
+      $("#btnSpeak").textContent = "Stop reading";
+      synth.speak(u);
+    };
+  }
+
+  // ---------- Claude helpers ----------
+  function errCopy(e) {
+    switch (e?.code) {
+      case "cancelled": return "";
+      case "no_key": openSettings(); return "Add your Claude API key in Settings first.";
+      case "bad_key": return "Claude didn't accept your API key. Check it in Settings.";
+      case "forbidden": return "Your API key isn't allowed to do this. Check your Anthropic Console account.";
+      case "no_credit": return "Your Anthropic account is out of credit. Add credit at console.anthropic.com.";
+      case "bad_model": return "That model isn't available on your account. Pick another one in Settings.";
+      case "overloaded": return "Claude is very busy right now. Try again in a minute.";
+      case "network": return "Couldn't reach Claude. Check your internet connection.";
+      case "rate_limited": return "You've sent a lot of requests in a short time. Wait a minute, then try again.";
+      case "refused": return "Claude declined that request. Try rewording it.";
+      case "prompt_too_large": return "This note is too long to send in one go. Select a smaller part and try again.";
+      case "invalid_json": return "Claude's answer came back in an unexpected shape. Press the button again.";
+      case "empty_completion": return "Claude didn't write anything. Try asking for less at once.";
+      default: return "Couldn't reach Claude. Check your connection and try again.";
+    }
+  }
+  function aiOff(msg) {
+    aiOn = false;
+    document.querySelectorAll(".ai").forEach((b) => (b.disabled = true));
+    $("#quick").querySelectorAll("button").forEach((b) => (b.disabled = true));
+    if (msg) banner(msg);
+  }
+  const noteText = () => editor.innerText.trim().slice(0, 12000);
+  const noteTitle = () => titleIn.value.trim() || "Untitled note";
+
+  function card(title, bodyHtml) {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `<div class="card-head"><h3>${esc(title)}</h3><button class="btn small close">Close</button></div><div class="card-body">${bodyHtml}</div>`;
+    el.querySelector(".close").onclick = () => el.remove();
+    $("#results").prepend(el);
+    return el;
+  }
+  function needText(el) {
+    if (noteText()) return false;
+    el.querySelector(".card-body").innerHTML = '<p class="note-msg">This note is empty. Write something first.</p>';
+    return true;
+  }
+
+  // Grammar check
+  function replaceInEditor(original, fix) {
+    const w = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = w.nextNode())) {
+      const i = node.nodeValue.indexOf(original);
+      if (i !== -1) { node.nodeValue = node.nodeValue.slice(0, i) + fix + node.nodeValue.slice(i + original.length); return true; }
+    }
+    return false;
+  }
+  $("#btnGrammar").onclick = async () => {
+    const el = card("Grammar check", '<p class="note-msg">Thinking...</p>');
+    if (needText(el)) return;
+    const btn = $("#btnGrammar"); btn.disabled = true;
+    try {
+      const res = await sample.json(
+        `You are a Danish teacher checking a learner's Danish writing. The learner is at CEFR level ${level()}.\n` +
+        `Find real mistakes in the Danish: spelling, word order (V2 and inversion), en/et gender, definite and plural forms, adjective endings, verb tenses, prepositions, and missing words. Ignore English text and anything that is already correct.\n` +
+        `Reply with only JSON in this shape: {"summary": "one short encouraging sentence in English", "issues": [{"original": "the wrong words copied EXACTLY from the text, as short as possible", "fix": "the corrected words", "why": "one short explanation in English"}]}\n` +
+        `At most 15 issues. If there are no mistakes, return an empty issues array. Don't use em dashes.\n\nTEXT:\n${noteText()}`
+      );
+      const issues = Array.isArray(res?.issues) ? res.issues.filter((i) => i && i.original && i.fix) : [];
+      const body = el.querySelector(".card-body");
+      if (!issues.length) { body.innerHTML = `<p class="note-msg" style="color:var(--ok)">No mistakes found. ${esc(res?.summary || "")}</p>`; return; }
+      body.innerHTML = `<p class="note-msg">${esc(res.summary || "")}</p>` +
+        issues.map((i, k) => `<div class="issue" data-k="${k}"><span class="pair"><del>${esc(i.original)}</del> → <ins>${esc(i.fix)}</ins></span><span class="why">${esc(i.why || "")}</span><button class="btn small">Apply</button></div>`).join("") +
+        `<div class="row"><button class="btn small sea applyAll">Apply all</button></div>`;
+      const apply = (row) => {
+        if (row.classList.contains("done")) return;
+        const i = issues[+row.dataset.k];
+        if (replaceInEditor(i.original, i.fix)) { row.classList.add("done"); row.querySelector(".btn").textContent = "Applied"; scheduleSave(); }
+        else { row.querySelector(".why").textContent = "Couldn't find this exact text in the note. Fix it by hand."; }
+      };
+      body.querySelectorAll(".issue").forEach((row) => (row.querySelector(".btn").onclick = () => apply(row)));
+      body.querySelector(".applyAll").onclick = () => body.querySelectorAll(".issue").forEach(apply);
+    } catch (e) {
+      el.querySelector(".card-body").innerHTML = `<p class="note-msg bad">${esc(errCopy(e))}</p>`;
+    } finally { if (aiOn) btn.disabled = false; }
+  };
+
+  // Translate (selection or whole note)
+  $("#btnTranslate").onclick = async () => {
+    const s = document.getSelection();
+    const sel = s && editor.contains(s.anchorNode) ? String(s).trim() : "";
+    const el = card(sel ? "Translation of selection" : "Translation", '<p class="note-msg">Thinking...</p>');
+    if (!sel && needText(el)) return;
+    const body = el.querySelector(".card-body");
+    try {
+      await sample(
+        `Translate the following text into natural English. If parts are already English, translate those into Danish instead. Keep the line breaks and headings. Output only the translation. Don't use em dashes.\n\n${sel || noteText()}`,
+        { onText: ({ text }) => { body.innerHTML = `<div class="translation">${esc(text)}</div>`; } }
+      );
+    } catch (e) { body.innerHTML = (e?.text ? `<div class="translation">${esc(e.text)}</div>` : "") + `<p class="note-msg bad">${esc(errCopy(e))}</p>`; }
+  };
+
+  // Find vocabulary
+  $("#btnVocab").onclick = async () => {
+    const el = card("Vocabulary in this note", '<p class="note-msg">Thinking...</p>');
+    if (needText(el)) return;
+    const body = el.querySelector(".card-body");
+    try {
+      const words = await sample.json(
+        `From this Danish learner's note, pick the most useful words and phrases for a ${level()} learner to memorise (at most 12). ` +
+        `Write nouns with their article (en/et), verbs in the infinitive with "at". ` +
+        `Reply with only a JSON array like [{"da": "en lejlighed", "en": "an apartment", "example": "Vi bor i en lille lejlighed."}]. Don't use em dashes.\n\nNOTE:\n${noteText()}`
+      );
+      const have = new Set(vocab.map((v) => String(v.da).toLowerCase()));
+      const list = (Array.isArray(words) ? words : []).filter((w) => w && w.da && w.en);
+      if (!list.length) { body.innerHTML = '<p class="note-msg">No useful words found in this note.</p>'; return; }
+      body.innerHTML = list.map((w, k) => {
+        const dup = have.has(String(w.da).toLowerCase());
+        return `<label class="vpick"><input type="checkbox" id="vp${k}" data-k="${k}" ${dup ? "disabled" : "checked"}><span><span class="da">${esc(w.da)}</span> <span class="en">${esc(w.en)}${dup ? " (already saved)" : ""}</span></span></label>`;
+      }).join("") + '<div class="row"><button class="btn small primary addV">Add ticked words to Vocab bank</button><span class="note-msg addMsg"></span></div>';
+      body.querySelector(".addV").onclick = async (ev) => {
+        const picks = [...body.querySelectorAll("input:checked:not(:disabled)")].map((c) => list[+c.dataset.k]);
+        if (!picks.length) return;
+        ev.target.disabled = true;
+        try {
+          for (const w of picks) await store.addVocab({ da: String(w.da), en: String(w.en), example: String(w.example || ""), noteId: currentId, createdAt: Date.now() });
+          body.querySelector(".addMsg").textContent = `Added ${picks.length} word${picks.length > 1 ? "s" : ""}.`;
+          body.querySelectorAll("input:checked").forEach((c) => (c.disabled = true));
+        } catch { body.querySelector(".addMsg").textContent = "Couldn't save the words. Try again."; ev.target.disabled = false; }
+      };
+    } catch (e) { body.innerHTML = `<p class="note-msg bad">${esc(errCopy(e))}</p>`; }
+  };
+
+  // Build a lesson into an empty note
+  const SUGGEST = ["Ordstilling: inversion efter tidsudtryk", "Datid af almindelige verber", "En eller et? Kønsregler", "At præsentere sig selv", "Hos lægen", "Præpositioner: i, på, til"];
+  $("#genChips").innerHTML = SUGGEST.map((s) => `<button class="chip" type="button">${esc(s)}</button>`).join("");
+  $("#genChips").querySelectorAll(".chip").forEach((c) => (c.onclick = () => { $("#genTopic").value = c.textContent; $("#genTopic").focus(); }));
+  function updateGenCard() { $("#genCard").hidden = !currentId || !!editor.innerText.trim(); }
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+  $("#btnGen").onclick = async () => {
+    const topic = $("#genTopic").value.trim();
+    const msg = $("#genMsg");
+    if (!topic) { msg.className = "note-msg bad"; msg.textContent = "Type a topic first, or pick one of the suggestions."; return; }
+    const btn = $("#btnGen"); btn.disabled = true; msg.className = "note-msg"; msg.textContent = "Building your lesson. This can take up to a minute...";
+    try {
+      const L = await sample.json(
+        `Write a short Danish lesson for a learner at CEFR level ${level()} about: ${topic}.\n` +
+        `Explanations in English, examples in Danish with English translations. Include a short explanation, 6-10 example sentences, a key vocabulary list, and 3 practice exercises with an answer key at the end. Use **bold** for the key Danish words.\n` +
+        `Reply with only JSON: {"title": "short lesson title", "blocks": [{"type": "h2" | "h3" | "p" | "ul" | "ol", "text": "for h2/h3/p", "items": ["for ul/ol"]}]}. Don't use em dashes.`
+      );
+      const blocks = Array.isArray(L?.blocks) ? L.blocks : [];
+      if (!blocks.length) throw { code: "invalid_json" };
+      const html = blocks.map((b) => {
+        const t = String(b.type || "p");
+        if (t === "ul" || t === "ol") return `<${t}>${(b.items || []).map((i) => `<li>${inline(i)}</li>`).join("")}</${t}>`;
+        const tag = ["h2", "h3"].includes(t) ? t : "p";
+        return `<${tag}>${inline(b.text || "")}</${tag}>`;
+      }).join("");
+      editor.innerHTML = html;
+      if (!titleIn.value.trim() || titleIn.value === "Untitled note") titleIn.value = String(L.title || topic);
+      $("#genTopic").value = ""; msg.textContent = "";
+      updateGenCard(); scheduleSave();
+    } catch (e) { msg.className = "note-msg bad"; msg.textContent = errCopy(e); }
+    finally { if (aiOn) btn.disabled = false; }
+  };
+
+  // ---------- Tutor chat ----------
+  function md(src) {
+    const lines = esc(src).split("\n");
+    let out = "", list = null;
+    const close = () => { if (list) { out += `</${list}>`; list = null; } };
+    const fmt = (s) => s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<em>$2</em>").replace(/`(.+?)`/g, "<code>$1</code>");
+    for (const line of lines) {
+      let m;
+      if ((m = line.match(/^\s*[-*•]\s+(.*)/))) { if (list !== "ul") { close(); out += "<ul>"; list = "ul"; } out += `<li>${fmt(m[1])}</li>`; }
+      else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); out += "<ol>"; list = "ol"; } out += `<li>${fmt(m[1])}</li>`; }
+      else if ((m = line.match(/^#{1,4}\s+(.*)/))) { close(); out += `<h4>${fmt(m[1])}</h4>`; }
+      else if (!line.trim()) { close(); }
+      else { close(); out += `<p>${fmt(line)}</p>`; }
+    }
+    close();
+    return out;
+  }
+  const chatKey = () => currentId || "_none";
+  const turns = () => { if (!chats.has(chatKey())) chats.set(chatKey(), []); return chats.get(chatKey()); };
+
+  function renderChat() {
+    const box = $("#chat");
+    const t = turns();
+    box.innerHTML = `<div class="msg ai"><p>Hej! I'm Lærer, your Danish tutor. ${currentId ? "I can see the note you have open. Ask me anything about it, or use the buttons below." : "Open a note and I'll help you with it, or just ask me anything about Danish."}</p></div>` +
+      t.map((m) => m.role === "user" ? `<div class="msg me">${esc(m.content)}</div>` : `<div class="msg ai">${md(m.content)}</div>`).join("");
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function rules() {
+    const words = vocab.slice(0, 60).map((v) => `${v.da} = ${v.en}`).join("; ");
+    return `You are Lærer, a warm, patient Danish tutor helping an adult learner at CEFR level ${level()} who is studying Danish in Denmark.\n` +
+      `Reply in English unless the learner writes to you in Danish; then reply in simple Danish at their level with English help where needed. Always give Danish examples with English translations.\n` +
+      `Keep answers short and clear (under 200 words unless asked for more). Use simple Markdown only: **bold**, bullet lists with "- ", numbered lists. Don't use em dashes.\n` +
+      `When quizzing, ask one question at a time, wait for the answer, then say whether it was right and why.\n` +
+      `When you correct Danish, show the corrected sentence in bold and explain the rule briefly.\n\n` +
+      (words ? `The learner's saved vocabulary: ${words}\n\n` : "") +
+      (currentId ? `The learner's current note, titled "${noteTitle()}":\n<note>\n${noteText() || "(empty)"}\n</note>` : "The learner has no note open.");
+  }
+
+  async function sendChat(text) {
+    text = String(text || "").trim();
+    if (!text || chatCtl || !aiOn) return;
+    const t = turns();
+    t.push({ role: "user", content: text });
+    renderChat();
+    const box = $("#chat");
+    const bubble = document.createElement("div");
+    bubble.className = "msg ai thinking"; bubble.textContent = "Thinking...";
+    box.appendChild(bubble); box.scrollTop = box.scrollHeight;
+    chatCtl = new AbortController();
+    $("#chatSend").hidden = true; $("#chatStop").hidden = false;
+    try {
+      const { text: answer, truncated } = await sample([{ role: "user", content: rules() }, ...t.slice(-16)], {
+        cache: false, signal: chatCtl.signal,
+        onText: ({ text }) => { bubble.className = "msg ai"; bubble.innerHTML = md(text); box.scrollTop = box.scrollHeight; },
+      });
+      t.push({ role: "assistant", content: answer + (truncated ? "\n\n(Cut short. Ask me to continue.)" : "") });
+      renderChat();
+    } catch (e) {
+      if (e?.text) t.push({ role: "assistant", content: e.text });
+      renderChat();
+      const msg = errCopy(e);
+      if (msg) { const n = document.createElement("div"); n.className = "note-msg bad"; n.textContent = msg; $("#chat").appendChild(n); }
+    } finally {
+      chatCtl = null; $("#chatSend").hidden = false; $("#chatStop").hidden = true;
+    }
+  }
+  $("#composer").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#chatIn").value; $("#chatIn").value = ""; autoGrow(); sendChat(v); });
+  $("#chatIn").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#composer").requestSubmit(); } });
+  const autoGrow = () => { const a = $("#chatIn"); a.style.height = "auto"; a.style.height = Math.min(a.scrollHeight, 140) + "px"; };
+  $("#chatIn").addEventListener("input", autoGrow);
+  $("#chatStop").onclick = () => chatCtl?.abort();
+  $("#clearChat").onclick = () => { if (chatCtl) chatCtl.abort(); chats.set(chatKey(), []); renderChat(); };
+  $("#quick").querySelectorAll("button").forEach((b) => (b.onclick = () => { setView("tutor"); sendChat(b.dataset.q); }));
+  $("#quizVocab").onclick = () => { setView("tutor"); sendChat("Quiz me on the words in my vocab bank. Ask one question at a time and wait for my answer."); };
+  $("#btnAskSel").onclick = () => {
+    const s = document.getSelection();
+    const sel = s && editor.contains(s.anchorNode) ? String(s).trim() : "";
+    if (!sel) { setStatus("Select some text first"); return; }
+    setView("tutor");
+    sendChat(`Explain this part of my note: "${sel.slice(0, 1500)}"`);
+  };
+
+  // ---------- boot ----------
+  // ---------- settings ----------
+  function openSettings() {
+    $("#apiKey").value = getKey(); $("#model").value = getModel(); $("#keyMsg").textContent = ""; $("#backupMsg").textContent = "";
+    $("#settings").hidden = false; $("#apiKey").focus();
+  }
+  function closeSettings() { $("#settings").hidden = true; }
+  function aiOnFn() {
+    aiOn = true; banner("");
+    document.querySelectorAll(".ai").forEach((b) => (b.disabled = false));
+    $("#quick").querySelectorAll("button").forEach((b) => (b.disabled = false));
+  }
+  $("#openSettings").onclick = openSettings;
+  $("#closeSettings").onclick = closeSettings;
+  $("#settings").addEventListener("click", (e) => { if (e.target.id === "settings") closeSettings(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#settings").hidden) closeSettings(); });
+  $("#saveKey").onclick = () => {
+    const k = $("#apiKey").value.trim();
+    lsSet("kladde-model", $("#model").value);
+    if (!k) { $("#keyMsg").textContent = "Paste your key first."; return; }
+    if (!k.startsWith("sk-ant-")) { $("#keyMsg").textContent = "That doesn't look like a Claude key. It should start with sk-ant-"; return; }
+    lsSet("kladde-key", k);
+    $("#keyMsg").textContent = "Saved."; aiOnFn();
+  };
+  $("#forgetKey").onclick = () => {
+    try { localStorage.removeItem("kladde-key"); } catch {}
+    $("#apiKey").value = ""; $("#keyMsg").textContent = "Key removed from this browser.";
+    aiOff("Add your Claude API key in Settings to turn on the AI tutor.");
+  };
+  $("#exportBtn").onclick = () => {
+    const blob = new Blob([JSON.stringify(store.exportAll(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "kladde-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    $("#backupMsg").textContent = "Backup downloaded.";
+  };
+  $("#importFile").onchange = async (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (data?.app !== "kladde") throw 0;
+      store.importAll(data);
+      $("#backupMsg").textContent = `Restored ${Object.keys(data.notes || {}).length} notes and ${Object.keys(data.vocab || {}).length} words.`;
+    } catch { $("#backupMsg").textContent = "That file isn't a Kladde backup."; }
+    e.target.value = "";
+  };
+
+  async function boot() {
+    renderPage(); renderNoteList(); renderVocab(); renderChat();
+    store = localStore();
+    sample = apiSample();
+    // First visit: add one example note so there's something to try.
+    if (!lsGet("kladde-seeded")) {
+      lsSet("kladde-seeded", "1");
+      try {
+        await store.saveNote("example-note", {
+          title: "Example: Min weekend", createdAt: Date.now(), updatedAt: Date.now(),
+          html: "<p><em>This is an example note. It has a few deliberate mistakes so you can try Grammar check. Delete it whenever you like.</em></p><h2>Min weekend</h2><p>I lørdag jeg gik en tur med mine hunde ved stranden. Vejret var dejligt og solen skinnede.</p><p>Om aftenen vi spiste et lækker middag hos min ven. Vi snakkede om hus og om arbejdet.</p><h3>Nye ord</h3><ul><li><b>at gå en tur</b> = to go for a walk</li><li><b>dejligt</b> = lovely</li><li><b>at snakke</b> = to chat</li></ul>",
+        });
+      } catch {}
+    }
+    store.watchNotes(onNotes);
+    store.watchVocab((list) => { vocab = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); renderVocab(); });
+    if (getKey()) aiOnFn(); else aiOff("Welcome! Open Settings and add your Claude API key to turn on the AI tutor. Your notes work without it.");
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
