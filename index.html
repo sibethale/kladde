@@ -21,6 +21,7 @@
   --sea: #2C5878;
   --sea-soft: #E2EBF2;
   --ok: #2E7650;
+  --ok-soft: #E2F1E8;
   --warn: #9A5B0B;
   --shadow: 0 1px 2px rgba(23,32,43,.06), 0 4px 16px rgba(23,32,43,.05);
   --f-display: "Newsreader", "Iowan Old Style", Georgia, serif;
@@ -32,14 +33,14 @@
   :root:not([data-theme="light"]) {
     --paper: #11151B; --surface: #192029; --ink: #E5E9EF; --muted: #98A2B0; --line: #2A333E;
     --accent: #E35B6E; --accent-ink: #1A0D10; --accent-soft: #3A1E24; --sea: #84B3D3; --sea-soft: #1B2935;
-    --ok: #6CC495; --warn: #E0A85A; --shadow: 0 1px 2px rgba(0,0,0,.3);
+    --ok: #6CC495; --ok-soft: #173126; --warn: #E0A85A; --shadow: 0 1px 2px rgba(0,0,0,.3);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #11151B; --surface: #192029; --ink: #E5E9EF; --muted: #98A2B0; --line: #2A333E;
   --accent: #E35B6E; --accent-ink: #1A0D10; --accent-soft: #3A1E24; --sea: #84B3D3; --sea-soft: #1B2935;
-  --ok: #6CC495; --warn: #E0A85A; --shadow: 0 1px 2px rgba(0,0,0,.3);
+  --ok: #6CC495; --ok-soft: #173126; --warn: #E0A85A; --shadow: 0 1px 2px rgba(0,0,0,.3);
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -199,6 +200,53 @@ button { cursor: pointer; }
 @media (min-width: 681px) { .switcher .only-small { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 
+/* Titles you can rename */
+.contents { display: contents; }
+.title-row { display: flex; align-items: center; gap: 4px; }
+.title-in:hover { text-decoration: underline dotted var(--line); text-underline-offset: 7px; }
+.pencil { border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; padding: 6px 8px; border-radius: 6px; flex: none; }
+.pencil:hover { color: var(--ink); background: var(--paper); }
+.sheet-title { font-family: var(--f-display); font-size: 26px; font-weight: 600; margin: 0; }
+
+/* Exercises */
+.tabs button { padding: 6px 4px; font-size: 12.5px; }
+.ex-ins { max-width: 72ch; font-size: 15px; background: var(--paper); border-radius: 10px; padding: 10px 14px; white-space: pre-wrap; }
+.ex-items { display: flex; flex-direction: column; max-width: 78ch; }
+.ex-item { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); gap: 2px 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+.ex-item:first-child { border-top: 0; }
+.ex-num { font-family: var(--f-mono); font-size: 13px; color: var(--muted); padding-top: .55em; }
+.ex-line { font-size: 17px; line-height: 2.3; min-width: 0; overflow-wrap: anywhere; }
+.gap { display: inline-block; position: relative; width: 0; height: 1.5em; vertical-align: middle; }
+.gap:has(.chip-w) { width: auto; height: auto; }
+.nb { white-space: nowrap; }
+.picking .gap:not(:has(.chip-w))::after { content: ""; position: absolute; left: -1px; top: .1em; bottom: .1em; width: 1px; background: var(--line); }
+.gap.hot:not(:has(.chip-w))::after { content: ""; position: absolute; left: -2px; top: -.1em; bottom: -.1em; width: 4px; border-radius: 2px; background: var(--sea); }
+.gap.hot:has(.chip-w) { outline: 2px solid var(--sea); outline-offset: 2px; }
+.chip-w { font: inherit; font-size: 16px; line-height: 1.55; border: 1.5px solid var(--sea); background: var(--sea-soft); color: var(--sea); border-radius: 7px; padding: 0 .45em; margin: 0 .2em; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.chip-w.start { border-style: dashed; background: var(--surface); }
+.chip-w.selected { outline: 3px solid var(--accent); outline-offset: 1px; }
+.chip-w.ok { border-color: var(--ok); color: var(--ok); background: var(--ok-soft); border-style: solid; }
+.chip-w.bad { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); border-style: solid; }
+.chip-w.lifted { opacity: .3; }
+.ghost { position: fixed; z-index: 40; pointer-events: none; transform: translate(-50%, -70%); box-shadow: 0 6px 18px rgba(0,0,0,.18); cursor: grabbing; margin: 0; }
+.ex-fb { grid-column: 2; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.ex-fb:empty { display: none; }
+.ex-fb .why { color: var(--muted); flex-basis: 100%; }
+.ok-t { color: var(--ok); font-weight: 600; }
+.bad-t { color: var(--accent); font-weight: 600; }
+.blank { font: inherit; font-size: 16px; border: 0; border-bottom: 2px solid var(--sea); background: var(--sea-soft); color: var(--ink); border-radius: 4px 4px 0 0; padding: 0 .3em; margin: 0 .15em; text-align: center; max-width: 100%; }
+.blank.ok { border-color: var(--ok); background: var(--ok-soft); }
+.blank.bad { border-color: var(--accent); background: var(--accent-soft); }
+.bank { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.score { font-family: var(--f-mono); font-size: 13px; color: var(--ok); }
+#exPaste, .inp, .sel { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 9px 10px; font: inherit; color: var(--ink); }
+#exPaste { resize: vertical; }
+.row.wrap { flex-wrap: wrap; }
+.row.wrap .sel { width: auto; }
+.row.wrap .inp { flex: 1; min-width: 12em; width: auto; }
+.chk { display: inline-flex; gap: 6px; align-items: center; }
+.ex-meta { color: var(--muted); font-size: 12px; }
+
 /* File drop zone */
 .drop { border: 1.5px dashed var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
 .drop p { margin: 0; font-size: 13px; color: var(--muted); }
@@ -270,14 +318,19 @@ button { cursor: pointer; }
     <div class="shelf-head">
       <div class="tabs" role="tablist">
         <button id="tabNotes" role="tab" aria-selected="true">Notes</button>
-        <button id="tabVocab" role="tab" aria-selected="false">Vocab bank <span class="count" id="vCount">0</span></button>
+        <button id="tabEx" role="tab" aria-selected="false">Exercises</button>
+        <button id="tabVocab" role="tab" aria-selected="false">Words <span class="count" id="vCount">0</span></button>
       </div>
       <div class="row" id="notesTools">
         <input class="search" id="search" type="search" placeholder="Search notes">
         <button class="btn primary" id="newNote">+ New</button>
       </div>
+      <div class="row" id="exTools" hidden>
+        <button class="btn primary" id="newEx" style="flex:1;justify-content:center">+ New exercise</button>
+      </div>
     </div>
     <div class="list" id="noteList"></div>
+    <div class="list" id="exList" hidden></div>
     <div class="list" id="vocabList" hidden></div>
     <div class="shelf-foot" id="vocabFoot" hidden>
       <button class="btn sea" id="quizVocab" style="width:100%;justify-content:center">Quiz me on these words</button>
@@ -286,6 +339,44 @@ button { cursor: pointer; }
 
   <!-- The page -->
   <section class="pane page" aria-label="Note">
+    <!-- An open exercise -->
+    <div id="exView" class="contents" hidden>
+      <div class="page-head">
+        <div class="title-row"><input class="title-in" id="exTitle" aria-label="Exercise title" placeholder="Untitled exercise"><button class="pencil" id="renameEx" type="button" title="Rename this exercise" aria-label="Rename this exercise">✎</button></div>
+        <div class="actions">
+          <button class="btn primary" id="exCheck">Check answers</button>
+          <button class="btn" id="exShowAll">Show all answers</button>
+          <button class="btn" id="exReset">Start again</button>
+          <span class="score" id="exScore" aria-live="polite"></span>
+          <span class="spacer"></span>
+          <span id="exDelWrap"></span>
+        </div>
+      </div>
+      <div class="page-body" id="exBody"></div>
+    </div>
+    <!-- Making a new exercise -->
+    <div id="exNew" class="contents" hidden>
+      <div class="page-head"><h2 class="sheet-title">New exercise</h2></div>
+      <div class="page-body">
+        <div class="card">
+          <div class="card-head"><h3>From your class</h3></div>
+          <label for="exPaste" class="note-msg">Paste the exercise here, including the instructions. Or upload a photo, PDF, Word or PowerPoint file of it. It works for "put the word in the right place" and "fill in the blank" exercises.</label>
+          <textarea id="exPaste" rows="9" placeholder="Skriv adverbierne det rigtige sted i sætningerne.&#10;1. Jeg ved det (ikke).&#10;2. Han kommer for sent (altid)."></textarea>
+          <div class="row wrap"><button class="btn primary ai" id="exMake">Make it interactive</button><button class="btn sea ai" id="exUpload" type="button">Upload a file</button></div>
+          <p class="note-msg" id="exMsg"></p>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Or let the AI write one</h3></div>
+          <div class="row wrap">
+            <select id="exKind" class="sel" aria-label="Exercise type"><option value="place">Put the word in the right place</option><option value="fill">Fill in the blanks</option></select>
+            <input id="exTopic" class="inp" placeholder="Topic, e.g. ikke, aldrig and altid">
+          </div>
+          <div class="row wrap"><button class="btn ai" id="exGen">Write exercise</button><label class="note-msg chk" for="exFromNote"><input type="checkbox" id="exFromNote"> Use my last open note</label></div>
+          <p class="note-msg" id="exGenMsg"></p>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="exFile" hidden accept=".pdf,.pptx,.docx,.txt,.md,.png,.jpg,.jpeg,.webp,.gif,application/pdf,image/*">
     <div id="noNote" class="nothing">
       <h2>Open a note to start</h2>
       <p>Write your Danish lesson notes here. The tutor reads along and can check grammar, translate, and quiz you.</p>
@@ -293,7 +384,7 @@ button { cursor: pointer; }
     </div>
     <div id="hasNote" hidden style="display:contents">
       <div class="page-head">
-        <input class="title-in" id="title" aria-label="Note title" placeholder="Untitled note">
+        <div class="title-row"><input class="title-in" id="title" aria-label="Note title" placeholder="Untitled note"><button class="pencil" id="renameNote" type="button" title="Rename this note" aria-label="Rename this note">✎</button></div>
         <div class="actions">
           <button class="btn ai" id="btnGrammar">Grammar check</button>
           <button class="btn ai" id="btnTranslate">Translate</button>
@@ -381,6 +472,8 @@ button { cursor: pointer; }
 
   // ---------- state ----------
   let store = null, sample = null, aiOn = false;
+  let pageMode = "note"; // what the middle pane shows: "note", "exercise" or "newEx"
+  let exercises = [], currentEx = null;
   let notes = [], vocab = [], currentId = null, firstNotes = true;
   let saveTimer = null, saving = false, dirty = false;
   const chats = new Map(); // noteId -> [{role, content}]
@@ -399,29 +492,36 @@ button { cursor: pointer; }
   // Saves notes and words in this browser (localStorage).
   function localStore() {
     const load = (k) => { try { return new Map(Object.entries(JSON.parse(localStorage.getItem(k) || "{}"))); } catch { return new Map(); } };
-    let n = load("kladde-notes"), v = load("kladde-vocab"), ok = true;
+    let n = load("kladde-notes"), v = load("kladde-vocab"), x = load("kladde-exercises"), ok = true;
     const persist = () => {
       try {
         localStorage.setItem("kladde-notes", JSON.stringify(Object.fromEntries(n)));
         localStorage.setItem("kladde-vocab", JSON.stringify(Object.fromEntries(v)));
+        localStorage.setItem("kladde-exercises", JSON.stringify(Object.fromEntries(x)));
       } catch { ok = false; throw { code: "storage" }; }
     };
-    let nl = [], vl = [];
+    let nl = [], vl = [], xl = [];
     const emitN = () => nl.forEach((f) => f([...n.entries()].map(([id, d]) => ({ id, ...d }))));
     const emitV = () => vl.forEach((f) => f([...v.entries()].map(([id, d]) => ({ id, ...d }))));
+    const emitX = () => xl.forEach((f) => f([...x.entries()].map(([id, d]) => ({ ...d, id }))));
     return {
       get persistent() { return ok; },
       watchNotes: (cb) => { nl.push(cb); emitN(); },
       watchVocab: (cb) => { vl.push(cb); emitV(); },
+      watchExercises: (cb) => { xl.push(cb); emitX(); },
       saveNote: async (id, d) => { n.set(id, d); persist(); emitN(); },
       deleteNote: async (id) => { n.delete(id); persist(); emitN(); },
       addVocab: async (d) => { v.set(newId(), d); persist(); emitV(); },
       deleteVocab: async (id) => { v.delete(id); persist(); emitV(); },
-      exportAll: () => ({ app: "kladde", version: 1, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v) }),
+      // Saving an exercise doesn't re-render the list, so dragging stays smooth
+      saveExercise: async (id, d, quiet) => { x.set(id, d); persist(); if (!quiet) emitX(); },
+      deleteExercise: async (id) => { x.delete(id); persist(); emitX(); },
+      exportAll: () => ({ app: "kladde", version: 2, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v), exercises: Object.fromEntries(x) }),
       importAll: (data) => {
         for (const [id, d] of Object.entries(data.notes || {})) n.set(id, d);
         for (const [id, d] of Object.entries(data.vocab || {})) v.set(id, d);
-        persist(); emitN(); emitV();
+        for (const [id, d] of Object.entries(data.exercises || {})) x.set(id, d);
+        persist(); emitN(); emitV(); emitX();
       },
     };
   }
@@ -603,13 +703,16 @@ button { cursor: pointer; }
 
   // ---------- shelf ----------
   function showShelf(which) {
-    const isNotes = which === "notes";
-    $("#tabNotes").setAttribute("aria-selected", String(isNotes));
-    $("#tabVocab").setAttribute("aria-selected", String(!isNotes));
-    $("#noteList").hidden = !isNotes; $("#notesTools").hidden = !isNotes;
-    $("#vocabList").hidden = isNotes; $("#vocabFoot").hidden = isNotes || !vocab.length;
+    $("#tabNotes").setAttribute("aria-selected", String(which === "notes"));
+    $("#tabEx").setAttribute("aria-selected", String(which === "ex"));
+    $("#tabVocab").setAttribute("aria-selected", String(which === "vocab"));
+    $("#noteList").hidden = $("#notesTools").hidden = which !== "notes";
+    $("#exList").hidden = $("#exTools").hidden = which !== "ex";
+    $("#vocabList").hidden = which !== "vocab";
+    $("#vocabFoot").hidden = which !== "vocab" || !vocab.length;
   }
   $("#tabNotes").onclick = () => showShelf("notes");
+  $("#tabEx").onclick = () => showShelf("ex");
   $("#tabVocab").onclick = () => showShelf("vocab");
   $("#search").oninput = renderNoteList;
 
@@ -624,7 +727,7 @@ button { cursor: pointer; }
     if (!shown.length) { list.innerHTML = '<div class="empty">No notes match that search.</div>'; return; }
     list.innerHTML = shown.map((n) => {
       const preview = plain(n.html).slice(0, 80) || "Empty note";
-      return `<button class="note-item" data-id="${esc(n.id)}" aria-current="${n.id === currentId}"><b>${esc(n.title || "Untitled note")}</b><small>${esc(fmtDate(n.updatedAt))} · ${esc(preview)}</small></button>`;
+      return `<button class="note-item" data-id="${esc(n.id)}" aria-current="${pageMode === "note" && n.id === currentId}"><b>${esc(n.title || "Untitled note")}</b><small>${esc(fmtDate(n.updatedAt))} · ${esc(preview)}</small></button>`;
     }).join("");
     list.querySelectorAll(".note-item").forEach((b) => (b.onclick = () => { openNote(b.dataset.id); setView("page"); }));
   }
@@ -653,6 +756,7 @@ button { cursor: pointer; }
 
   async function openNote(id) {
     if (currentId && dirty) await flushSave();
+    pageMode = "note"; currentEx = null; renderExList();
     currentId = id;
     const n = notes.find((x) => x.id === id);
     titleIn.value = n?.title || "";
@@ -663,11 +767,14 @@ button { cursor: pointer; }
   }
 
   function renderPage() {
-    const has = !!currentId;
-    $("#noNote").hidden = has; $("#hasNote").hidden = !has;
+    const noteMode = pageMode === "note", has = noteMode && !!currentId;
+    $("#noNote").hidden = !noteMode || has; $("#hasNote").hidden = !has;
     $("#hasNote").style.display = has ? "contents" : "none";
+    $("#exView").hidden = pageMode !== "exercise";
+    $("#exNew").hidden = pageMode !== "newEx";
     updateGenCard();
   }
+  $("#renameNote").onclick = () => { titleIn.focus(); titleIn.select(); };
 
   async function createNote() {
     if (currentId && dirty) await flushSave();
@@ -1072,6 +1179,476 @@ button { cursor: pointer; }
     lessonFromFile(e.dataTransfer.files[0]);
   });
 
+  // ---------- Exercises ----------
+  // Sentences are split into words and punctuation. A "gap" g is the spot just before word g.
+  const TOK = /\u0001\d+\u0002|[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*|[^\s\p{L}\p{N}\u0001\u0002]+/gu;
+  const isPunct = (t) => !/[\p{L}\p{N}]/u.test(t);
+  const tokenize = (s) => String(s).match(TOK) || [];
+  const normW = (t) => String(t).toLowerCase();
+  const normAns = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+  const noSpaceBefore = (t) => /^[,.!?;:)\]»”]/.test(t);
+  const joinTokens = (arr) => arr.reduce((out, t, i) => out + (i === 0 || noSpaceBefore(t) || /[(\[«“]$/.test(arr[i - 1]) ? "" : " ") + t, "");
+
+  // "Jeg ved det (ikke)." -> words ["Jeg","ved","det","."] and a chip "ikke" that starts at gap 3
+  function parsePlace(given) {
+    const chips = [];
+    const s = String(given).replace(/\(([^()]+)\)/g, (m, w) => { chips.push({ word: w.trim(), start: 0 }); return ` \u0001${chips.length - 1}\u0002 `; });
+    const tokens = [];
+    for (const t of tokenize(s)) {
+      const m = t.match(/^\u0001(\d+)\u0002$/);
+      if (m) chips[+m[1]].start = tokens.length;
+      else tokens.push(t);
+    }
+    return { tokens, chips };
+  }
+  // Compares with the correct sentence to find the right gap for each chip.
+  // Returns null if the correct sentence also changes other words (then it's checked by eye).
+  function answerGaps(tokens, chips, correct) {
+    const bt = tokens.map(normW), ct = tokenize(correct).map(normW);
+    let bi = 0; const extras = new Map();
+    for (const t of ct) {
+      if (bi < bt.length && t === bt[bi]) { bi++; continue; }
+      if (!extras.has(bi)) extras.set(bi, []);
+      extras.get(bi).push(t);
+    }
+    if (bi !== bt.length) return null;
+    const res = [];
+    for (const c of chips) {
+      const cw = tokenize(c.word).map(normW);
+      let found = null;
+      for (const [g, arr] of extras) {
+        for (let k = 0; k + cw.length <= arr.length; k++) {
+          if (cw.every((w, j) => arr[k + j] === w)) { found = g; arr.splice(k, cw.length); break; }
+        }
+        if (found !== null) break;
+      }
+      if (found === null) return null;
+      res.push(found);
+    }
+    if ([...extras.values()].some((a) => a.length)) return null;
+    return res;
+  }
+
+  function freshState(ex) {
+    return ex.type === "place"
+      ? { pos: ex.items.map((it) => it.chips.map((c) => c.start)), moved: ex.items.map((it) => it.chips.map(() => false)), shown: {}, checked: false }
+      : { val: ex.items.map((it) => it.answers.map(() => "")), shown: {}, checked: false };
+  }
+
+  // Turns the AI's JSON into an exercise the app can run
+  function buildExercise(raw, fallbackTitle) {
+    const type = raw?.type === "fill" ? "fill" : "place";
+    const items = (Array.isArray(raw?.items) ? raw.items : []).map((it) => {
+      const given = String(it?.given || "").replace(/^\s*\d+[.)]\s*/, "").trim();
+      if (type === "place") {
+        const { tokens, chips } = parsePlace(given);
+        chips.forEach((c) => (c.answers = []));
+        let auto = chips.length > 0 && !!it.correct;
+        [it.correct, ...(Array.isArray(it.alternatives) ? it.alternatives : [])].filter(Boolean).forEach((sentence, k) => {
+          const g = answerGaps(tokens, chips, sentence);
+          if (g) g.forEach((x, i) => { if (!chips[i].answers.includes(x)) chips[i].answers.push(x); });
+          else if (k === 0) auto = false;
+        });
+        if (chips.some((c) => !c.answers.length)) auto = false;
+        return { given, correct: String(it.correct || ""), why: String(it.why || ""), tokens, chips, auto };
+      }
+      const parts = given.split(/_{2,}/);
+      const answers = parts.slice(1).map((_, b) => {
+        const a = Array.isArray(it.answers) ? it.answers[b] : undefined;
+        return (Array.isArray(a) ? a : a ? [a] : []).map(String).filter(Boolean);
+      });
+      return { given, parts, answers, why: String(it.why || ""), correct: String(it.correct || "") };
+    }).filter((it) => (type === "place" ? it.tokens.length && it.chips.length : it.parts.length > 1));
+    const ex = {
+      title: String(raw?.title || fallbackTitle || "Exercise").slice(0, 120),
+      instructions: String(raw?.instructions || ""),
+      type, items,
+      wordBank: Array.isArray(raw?.wordBank) ? raw.wordBank.map(String).filter(Boolean).slice(0, 40) : [],
+    };
+    ex.state = freshState(ex);
+    return ex;
+  }
+
+  // Which chips are in a correct spot. Identical words (two "ikke") can swap places.
+  function gradePlace(it, pos) {
+    const res = it.chips.map(() => false), groups = {};
+    it.chips.forEach((c, k) => (groups[normW(c.word)] ||= []).push(k));
+    for (const ks of Object.values(groups)) {
+      const used = new Set();
+      for (const k of ks) {
+        const owner = ks.find((o) => !used.has(o) && it.chips[o].answers.includes(pos[k]));
+        if (owner !== undefined) { used.add(owner); res[k] = true; }
+      }
+    }
+    return res;
+  }
+  const gradeFill = (it, vals) => it.answers.map((a, b) => (a.length ? a.some((x) => normAns(x) === normAns(vals[b])) : null));
+  // true / false, or null when it can't be checked automatically
+  function itemResult(ex, i) {
+    const it = ex.items[i], st = ex.state;
+    if (ex.type === "place") return it.auto ? gradePlace(it, st.pos[i]).every(Boolean) : null;
+    const g = gradeFill(it, st.val[i]);
+    return g.includes(null) ? null : g.every(Boolean);
+  }
+  function myAnswer(ex, i) {
+    const it = ex.items[i], st = ex.state;
+    if (ex.type === "fill") return it.parts.reduce((s, p, b) => s + p + (b < it.parts.length - 1 ? `[${st.val[i][b] || "..."}]` : ""), "");
+    const out = [];
+    for (let g = 0; g <= it.tokens.length; g++) {
+      it.chips.forEach((c, k) => { if (st.pos[i][k] === g) out.push(st.moved[i][k] ? c.word : `(${c.word})`); });
+      if (g < it.tokens.length) out.push(it.tokens[g]);
+    }
+    return joinTokens(out);
+  }
+
+  let exSaveT = null, sel = null, drag = null, lastBlank = null;
+  function saveEx(now) {
+    clearTimeout(exSaveT);
+    const ex = currentEx; if (!ex) return;
+    const run = () => { ex.updatedAt = Date.now(); store.saveExercise(ex.id, ex, true).catch(() => setStatus("Couldn't save", "bad")); };
+    if (now) run(); else exSaveT = setTimeout(run, 400);
+  }
+
+  function renderExList() {
+    const list = $("#exList");
+    if (!exercises.length) { list.innerHTML = '<div class="empty">No exercises yet. Press <b>+ New exercise</b> and paste one from your class, or let the AI write one.</div>'; return; }
+    list.innerHTML = exercises.map((ex) => {
+      let meta = `${ex.type === "place" ? "Word placement" : "Fill in the blanks"} · ${ex.items.length} sentence${ex.items.length === 1 ? "" : "s"}`;
+      if (ex.state?.checked) {
+        const r = ex.items.map((_, i) => itemResult(ex, i)).filter((x) => x !== null);
+        if (r.length) meta += ` · ${r.filter(Boolean).length}/${r.length} right`;
+      }
+      return `<button class="note-item" data-id="${esc(ex.id)}" aria-current="${pageMode === "exercise" && currentEx?.id === ex.id}"><b>${esc(ex.title || "Untitled exercise")}</b><small>${esc(meta)}</small></button>`;
+    }).join("");
+    list.querySelectorAll(".note-item").forEach((b) => (b.onclick = () => openExercise(b.dataset.id)));
+  }
+  function onExercises(list) {
+    exercises = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    if (currentEx) {
+      const fresh = exercises.find((e) => e.id === currentEx.id);
+      if (fresh) currentEx = fresh; else if (pageMode === "exercise") { currentEx = null; pageMode = "note"; renderPage(); }
+    }
+    renderExList();
+  }
+  async function openExercise(id) {
+    if (currentId && dirty) await flushSave();
+    const ex = exercises.find((e) => e.id === id); if (!ex) return;
+    if (!ex.state) ex.state = freshState(ex);
+    currentEx = ex; pageMode = "exercise"; sel = null;
+    resetExDelete(); renderPage(); renderExercise(); renderExList(); renderNoteList(); renderChat();
+    $("#exBody").scrollTop = 0;
+    setView("page");
+  }
+  function newExercise() {
+    pageMode = "newEx"; currentEx = null;
+    $("#exMsg").textContent = ""; $("#exGenMsg").textContent = "";
+    renderPage(); renderExList(); setView("page");
+    $("#exPaste").focus();
+  }
+  $("#newEx").onclick = newExercise;
+
+  function chipHtml(ex, i, k, grade) {
+    const c = ex.items[i].chips[k], moved = ex.state.moved[i][k];
+    const cls = ["chip-w", moved ? "placed" : "start", grade ? (grade[k] ? "ok" : "bad") : "", sel && sel.i === i && sel.c === k ? "selected" : ""].join(" ");
+    return `<button type="button" class="${cls}" data-i="${i}" data-c="${k}" aria-label="${esc(c.word)}. Drag it, or use the arrow keys to move it.">${moved ? esc(c.word) : "(" + esc(c.word) + ")"}</button>`;
+  }
+  function feedbackHtml(ex, i) {
+    const it = ex.items[i], st = ex.state, showing = st.checked || st.shown[i];
+    let fb = "";
+    if (showing) {
+      const r = itemResult(ex, i);
+      if (r === true) fb += '<span class="ok-t">✓ Rigtigt!</span>';
+      else if (r === false) fb += '<span class="bad-t">Not quite.</span>';
+      else fb += `<span class="note-msg">Compare with the answer: <b>${esc(it.correct || (it.answers || []).map((a) => a[0]).join(", "))}</b></span>`;
+      if (it.why && r !== true) fb += `<span class="why">${esc(it.why)}</span>`;
+    }
+    fb += `<button class="btn small" type="button" data-act="show" data-i="${i}">Show answer</button>`;
+    fb += `<button class="btn small ai" type="button" data-act="ask" data-i="${i}"${aiOn ? "" : " disabled"}>Ask tutor</button>`;
+    return fb;
+  }
+  function itemHtml(ex, i) {
+    const it = ex.items[i], st = ex.state, showing = st.checked || st.shown[i];
+    let line = "";
+    if (ex.type === "place") {
+      const grade = showing && it.auto ? gradePlace(it, st.pos[i]) : null;
+      for (let g = 0; g <= it.tokens.length; g++) {
+        const here = it.chips.map((_, k) => k).filter((k) => st.pos[i][k] === g);
+        const gap = `<span class="gap" data-g="${g}">${here.map((k) => chipHtml(ex, i, k, grade)).join("")}</span>`;
+        const t = it.tokens[g];
+        if (t === undefined) line += gap;
+        // Punctuation never wraps onto a new line away from the word or chip before it
+        else if (noSpaceBefore(t)) line += `<span class="nb">${gap}<span class="tok">${esc(t)}</span></span>`;
+        else line += gap + (g === 0 ? "" : " ") + `<span class="tok">${esc(t)}</span>`;
+      }
+    } else {
+      const grade = showing ? gradeFill(it, st.val[i]) : null;
+      it.parts.forEach((p, b) => {
+        line += esc(p);
+        if (b < it.parts.length - 1) {
+          const v = st.val[i][b] || "", gc = grade ? (grade[b] === true ? "ok" : grade[b] === false ? "bad" : "") : "";
+          line += `<input class="blank ${gc}" id="bl-${i}-${b}" data-i="${i}" data-b="${b}" value="${esc(v)}" style="width:${Math.max(7, v.length + 2)}ch" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Blank ${b + 1} in sentence ${i + 1}">`;
+        }
+      });
+    }
+    return `<div class="ex-item" data-i="${i}"><span class="ex-num">${i + 1}.</span><div class="ex-line" lang="da">${line}</div><div class="ex-fb">${feedbackHtml(ex, i)}</div></div>`;
+  }
+  function renderExercise() {
+    const ex = currentEx; if (!ex) return;
+    const body = $("#exBody"), top = body.scrollTop;
+    if (document.activeElement !== $("#exTitle")) $("#exTitle").value = ex.title || "";
+    let html = ex.instructions ? `<div class="ex-ins" lang="da">${esc(ex.instructions)}</div>` : "";
+    if (ex.type === "place") {
+      html += '<p class="note-msg">Drag each word in brackets to where it belongs. On a phone, tap the word and then tap the spot. You can also use the arrow keys.</p>';
+      if (ex.items.some((it) => !it.auto)) html += '<p class="note-msg">Some sentences can\'t be checked automatically. For those, you\'ll see the answer to compare with.</p>';
+    } else {
+      html += '<p class="note-msg">Type the missing words.' + (ex.wordBank.length ? " Tap a word below to put it in the box you're on." : "") + "</p>";
+      if (ex.wordBank.length) html += `<div class="bank">${ex.wordBank.map((w) => `<button class="chip" type="button" data-act="bank" data-w="${esc(w)}">${esc(w)}</button>`).join("")}</div>`;
+    }
+    html += `<div class="ex-items">${ex.items.map((_, i) => itemHtml(ex, i)).join("")}</div>`;
+    body.innerHTML = html;
+    body.scrollTop = top;
+    updateScore();
+  }
+  function updateScore() {
+    const ex = currentEx, el = $("#exScore");
+    if (!ex?.state.checked) { el.textContent = ""; return; }
+    const r = ex.items.map((_, i) => itemResult(ex, i)).filter((x) => x !== null);
+    el.textContent = r.length ? `${r.filter(Boolean).length} of ${r.length} right` : "";
+  }
+  // Re-draws one sentence only (keeps typing focus and scroll smooth)
+  function refreshItem(i) {
+    const old = $("#exBody").querySelector(`.ex-item[data-i="${i}"]`);
+    if (old) old.outerHTML = itemHtml(currentEx, i);
+    updateScore();
+  }
+  function focusChip(i, c) { $("#exBody").querySelector(`.chip-w[data-i="${i}"][data-c="${c}"]`)?.focus({ preventScroll: true }); }
+
+  function placeChip(i, c, g) {
+    const st = currentEx.state;
+    st.pos[i][c] = g; st.moved[i][c] = true;
+    saveEx();
+  }
+  function nearestGap(item, x, y) {
+    let best = null, bd = Infinity;
+    item.querySelectorAll(".gap").forEach((gp) => {
+      const r = gp.getBoundingClientRect();
+      const d = Math.abs(x - (r.left + r.width / 2)) + Math.abs(y - (r.top + r.height / 2)) * 3;
+      if (d < bd) { bd = d; best = +gp.dataset.g; }
+    });
+    return best;
+  }
+  const overItem = (item, x, y) => { const r = item.getBoundingClientRect(); return x > r.left - 30 && x < r.right + 30 && y > r.top - 20 && y < r.bottom + 20; };
+
+  function showAnswer(i) {
+    const ex = currentEx, it = ex.items[i], st = ex.state;
+    if (ex.type === "place") {
+      if (it.auto) { st.pos[i] = it.chips.map((c) => c.answers[0]); st.moved[i] = it.chips.map(() => true); }
+    } else st.val[i] = it.answers.map((a) => a[0] || "");
+    st.shown[i] = true;
+    if (sel?.i === i) sel = null;
+    saveEx(); refreshItem(i); renderExList();
+  }
+  function askAboutItem(i) {
+    const ex = currentEx, it = ex.items[i], r = itemResult(ex, i), showing = ex.state.checked || ex.state.shown[i];
+    setView("tutor");
+    sendChat(`Help me with sentence ${i + 1} of my exercise "${ex.title}".\nThe exercise: ${it.given}\nMy answer: ${myAnswer(ex, i)}` +
+      (showing && r !== null ? `\nThe app marked it ${r ? "right" : "wrong"}.` : "") +
+      `\nExplain the rule simply. If I haven't got it right yet, give me a hint first instead of the answer.`);
+  }
+
+  // Dragging words (mouse, touch and pen)
+  const exBody = $("#exBody");
+  exBody.addEventListener("pointerdown", (e) => {
+    const chip = e.target.closest(".chip-w");
+    if (!chip || e.button > 0) return;
+    e.preventDefault();
+    drag = { chip, i: +chip.dataset.i, c: +chip.dataset.c, x0: e.clientX, y0: e.clientY, moving: false, ghost: null, g: null, item: chip.closest(".ex-item") };
+    try { chip.setPointerCapture(e.pointerId); } catch {}
+  });
+  exBody.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    if (!drag.moving) {
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
+      drag.moving = true;
+      const gh = drag.chip.cloneNode(true);
+      gh.classList.add("ghost"); gh.classList.remove("selected", "ok", "bad");
+      document.body.appendChild(gh); drag.ghost = gh;
+      drag.chip.classList.add("lifted"); drag.item.classList.add("picking");
+    }
+    drag.ghost.style.left = e.clientX + "px"; drag.ghost.style.top = e.clientY + "px";
+    const g = overItem(drag.item, e.clientX, e.clientY) ? nearestGap(drag.item, e.clientX, e.clientY) : null;
+    if (g !== drag.g) {
+      drag.item.querySelectorAll(".gap.hot").forEach((x) => x.classList.remove("hot"));
+      if (g !== null) drag.item.querySelector(`.gap[data-g="${g}"]`)?.classList.add("hot");
+      drag.g = g;
+    }
+  });
+  function endDrag(cancel) {
+    if (!drag) return;
+    const d = drag; drag = null;
+    d.ghost?.remove();
+    if (!d.moving) {
+      // A tap: pick the word up (or put it down again)
+      if (!cancel) { sel = sel && sel.i === d.i && sel.c === d.c ? null : { i: d.i, c: d.c }; refreshItem(d.i); focusChip(d.i, d.c); }
+      return;
+    }
+    if (!cancel && d.g !== null) { placeChip(d.i, d.c, d.g); sel = null; }
+    refreshItem(d.i);
+  }
+  exBody.addEventListener("pointerup", () => endDrag(false));
+  exBody.addEventListener("pointercancel", () => endDrag(true));
+
+  exBody.addEventListener("click", (e) => {
+    const act = e.target.closest("[data-act]");
+    if (act) {
+      const i = +act.dataset.i;
+      if (act.dataset.act === "show") showAnswer(i);
+      else if (act.dataset.act === "ask") askAboutItem(i);
+      else if (act.dataset.act === "bank") {
+        // Put the word in the box you were last in, or else the first empty box
+        const blanks = [...exBody.querySelectorAll(".blank")];
+        const target = (lastBlank && document.getElementById(lastBlank)) || blanks.find((b) => !b.value) || blanks[0];
+        if (target) { target.value = act.dataset.w; target.dispatchEvent(new Event("input", { bubbles: true })); target.focus(); }
+      }
+      return;
+    }
+    // Tap-to-place: with a word picked up, tap where it should go
+    if (sel && !e.target.closest(".chip-w")) {
+      const item = e.target.closest(".ex-item");
+      if (item && +item.dataset.i === sel.i) {
+        const g = nearestGap(item, e.clientX, e.clientY), s = sel;
+        if (g !== null) { placeChip(s.i, s.c, g); sel = null; refreshItem(s.i); }
+      }
+    }
+  });
+  exBody.addEventListener("keydown", (e) => {
+    const chip = e.target.closest?.(".chip-w");
+    if (!chip) return;
+    const i = +chip.dataset.i, c = +chip.dataset.c, it = currentEx.items[i], st = currentEx.state;
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const g = Math.max(0, Math.min(it.tokens.length, st.pos[i][c] + (e.key === "ArrowLeft" ? -1 : 1)));
+      placeChip(i, c, g); refreshItem(i); focusChip(i, c);
+    }
+  });
+  exBody.addEventListener("input", (e) => {
+    const inp = e.target.closest(".blank"); if (!inp) return;
+    currentEx.state.val[+inp.dataset.i][+inp.dataset.b] = inp.value;
+    inp.style.width = Math.max(7, inp.value.length + 2) + "ch";
+    inp.classList.remove("ok", "bad");
+    lastBlank = inp.id; saveEx();
+  });
+  exBody.addEventListener("focusin", (e) => { if (e.target.classList?.contains("blank")) lastBlank = e.target.id; });
+  exBody.addEventListener("change", (e) => {
+    // When you leave a box after checking, re-check that sentence
+    const inp = e.target.closest(".blank");
+    if (inp && (currentEx.state.checked || currentEx.state.shown[+inp.dataset.i])) {
+      const keep = document.activeElement?.id;
+      refreshItem(+inp.dataset.i);
+      if (keep) document.getElementById(keep)?.focus();
+    }
+  });
+
+  $("#exCheck").onclick = () => { if (!currentEx) return; currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exShowAll").onclick = () => { if (!currentEx) return; currentEx.items.forEach((_, i) => showAnswer(i)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exReset").onclick = () => { if (!currentEx) return; currentEx.state = freshState(currentEx); sel = null; saveEx(true); renderExercise(); renderExList(); };
+  $("#exTitle").addEventListener("input", () => { if (!currentEx) return; currentEx.title = $("#exTitle").value; saveEx(); clearTimeout(exListT); exListT = setTimeout(renderExList, 500); });
+  let exListT = null;
+  $("#exTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#exTitle").blur(); } });
+  $("#renameEx").onclick = () => { $("#exTitle").focus(); $("#exTitle").select(); };
+
+  function resetExDelete() { $("#exDelWrap").innerHTML = '<button class="btn small" id="exDelete">Delete</button>'; $("#exDelete").onclick = askExDelete; }
+  function askExDelete() {
+    $("#exDelWrap").innerHTML = '<span class="del-confirm">Delete this exercise? <button class="btn small primary" id="exDelYes">Delete</button><button class="btn small" id="exDelNo">Keep</button></span>';
+    $("#exDelNo").onclick = resetExDelete;
+    $("#exDelYes").onclick = async () => {
+      const id = currentEx?.id; if (!id) return;
+      clearTimeout(exSaveT);
+      chats.delete("ex:" + id);
+      currentEx = null; pageMode = "note";
+      await store.deleteExercise(id);
+      renderPage(); renderChat(); setStatus("Deleted");
+    };
+  }
+
+  // The rules the AI follows when it turns an exercise into JSON
+  const EX_FORMAT =
+    `Exercise types:\n- "place": the learner must put given words, shown in parentheses, into the right place in each sentence (for example adverbs like ikke, aldrig, altid, også, gerne).\n- "fill": the learner must write a missing word in each blank.\n` +
+    `For "place" items:\n- "given": the sentence(s) with each word to place in parentheses, exactly where it appears in the exercise. If the learner has already written one of those words into the sentence (it appears both in the sentence and in parentheses), remove that copy so only the one in parentheses remains. Keep speaker labels like "A:" and "B:". Leave out the item number.\n` +
+    `- "correct": the same text with every word from the parentheses placed correctly and the parentheses removed. Don't change any other words, and don't change the order of the other words.\n` +
+    `- "alternatives": other fully correct versions, only if a word can really go in more than one place. Otherwise [].\n` +
+    `- Use correct Danish word order: in a main clause, a central adverb (ikke, aldrig, altid, også, tit, gerne, nok, faktisk, virkelig...) goes right after the finite verb, or after the subject when the subject comes after the verb. In a subordinate clause (at, fordi, når, hvis, selvom, der, som, hvorfor...), it goes before the finite verb.\n` +
+    `For "fill" items:\n- "given": the sentence with each blank written as ___ (three underscores). Keep any hint in parentheses after the blank.\n- "answers": for each blank in order, a list of accepted answers.\n- "correct": the full sentence with the blanks filled in.\n` +
+    `For both: "why": one or two short sentences in English explaining the rule for this item.\n` +
+    `"wordBank": the words to choose from if the exercise gives a list, otherwise [].\n` +
+    `"instructions": the exercise instructions in the original language, then a short English translation in parentheses.\n` +
+    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "correct": "...", "alternatives": [], "answers": [["..."]], "why": "..."}]}. Don't use em dashes.`;
+
+  async function saveNewExercise(raw, fallbackTitle, msgEl) {
+    const ex = buildExercise(raw, fallbackTitle);
+    if (!ex.items.length) throw { msg: "Couldn't find any sentences to practise in that. Check that the exercise sentences are included, then try again." };
+    ex.id = "x" + newId().slice(1); ex.createdAt = ex.updatedAt = Date.now();
+    await store.saveExercise(ex.id, ex);
+    msgEl.textContent = "";
+    showShelf("ex");
+    openExercise(ex.id);
+  }
+  async function makeExercise(text, attachments, fileName) {
+    const msg = $("#exMsg");
+    if (!aiOn) { openSettings(); return; }
+    msg.className = "note-msg"; msg.textContent = "Reading the exercise and making it interactive. This can take a minute...";
+    $("#exMake").disabled = $("#exUpload").disabled = true;
+    try {
+      const raw = await sample.json(
+        `Turn this Danish language exercise into an interactive exercise for a learner at CEFR level ${level()}.\n${EX_FORMAT}` +
+        (text ? `\n\nEXERCISE:\n${String(text).slice(0, Math.max(P().budget, 8000))}` : "\n\nThe exercise is in the attached file."),
+        { attachments, maxTokens: 6000 }
+      );
+      await saveNewExercise(raw, fileName || "Exercise", msg);
+      $("#exPaste").value = "";
+    } catch (e) {
+      msg.className = "note-msg bad";
+      msg.textContent = e?.msg || (e?.code ? errCopy(e) : "") || "Something went wrong. Try again.";
+    } finally { if (aiOn) $("#exMake").disabled = $("#exUpload").disabled = false; }
+  }
+  $("#exMake").onclick = () => {
+    const t = $("#exPaste").value.trim();
+    if (!t) { $("#exMsg").className = "note-msg bad"; $("#exMsg").textContent = "Paste an exercise first, or upload a file."; return; }
+    makeExercise(t);
+  };
+  $("#exUpload").onclick = () => $("#exFile").click();
+  $("#exFile").onchange = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+    const msg = $("#exMsg");
+    try {
+      msg.className = "note-msg"; msg.textContent = "Reading the file...";
+      const got = await readFile(f);
+      await makeExercise(got.text, got.attachments, f.name.replace(/\.[^.]+$/, ""));
+    } catch (err) { msg.className = "note-msg bad"; msg.textContent = err?.msg || "Couldn't read that file. Try a PDF or a photo instead."; }
+  };
+  $("#exGen").onclick = async () => {
+    const msg = $("#exGenMsg"), topic = $("#exTopic").value.trim(), kind = $("#exKind").value;
+    const useNote = $("#exFromNote").checked && currentId;
+    if (!aiOn) { openSettings(); return; }
+    if (!topic && !useNote) { msg.className = "note-msg bad"; msg.textContent = "Type a topic, or tick \"Use my last open note\"."; return; }
+    const n = useNote ? notes.find((x) => x.id === currentId) : null;
+    const noteBody = n ? plain(n.html).slice(0, P().budget) : "";
+    msg.className = "note-msg"; msg.textContent = "Writing your exercise. This can take a minute...";
+    $("#exGen").disabled = true;
+    try {
+      const raw = await sample.json(
+        `Write a new Danish exercise for a learner at CEFR level ${level()}. The type must be "${kind}". Write 8 items, each a natural, everyday Danish sentence.` +
+        (kind === "place" ? ` Put each word to place in parentheses right after the clause it belongs to, the way textbooks do.` : "") +
+        (topic ? `\nTopic: ${topic}` : "") + (n ? `\nBase it on this lesson note:\n<note>\n${noteBody}\n</note>` : "") +
+        `\nThe instructions should be in Danish, with an English translation.\n${EX_FORMAT}`,
+        { maxTokens: 6000 }
+      );
+      await saveNewExercise(raw, topic || "Practice", msg);
+      $("#exTopic").value = "";
+    } catch (e) { msg.className = "note-msg bad"; msg.textContent = e?.msg || (e?.code ? errCopy(e) : "") || "Something went wrong. Try again."; }
+    finally { if (aiOn) $("#exGen").disabled = false; }
+  };
+
   // ---------- Tutor chat ----------
   function md(src) {
     const lines = esc(src).split("\n");
@@ -1089,13 +1666,17 @@ button { cursor: pointer; }
     close();
     return out;
   }
-  const chatKey = () => currentId || "_none";
+  const exOpen = () => pageMode === "exercise" && !!currentEx;
+  const chatKey = () => (exOpen() ? "ex:" + currentEx.id : currentId || "_none");
   const turns = () => { if (!chats.has(chatKey())) chats.set(chatKey(), []); return chats.get(chatKey()); };
 
   function renderChat() {
     const box = $("#chat");
     const t = turns();
-    box.innerHTML = `<div class="msg ai"><p>Hej! I'm Lærer, your Danish tutor. ${currentId ? "I can see the note you have open. Ask me anything about it, or use the buttons below." : "Open a note and I'll help you with it, or just ask me anything about Danish."}</p></div>` +
+    const hello = exOpen() ? "I can see the exercise you have open. Ask me about any sentence, or press Ask tutor next to one."
+      : currentId ? "I can see the note you have open. Ask me anything about it, or use the buttons below."
+      : "Open a note and I'll help you with it, or just ask me anything about Danish.";
+    box.innerHTML = `<div class="msg ai"><p>Hej! I'm Lærer, your Danish tutor. ${hello}</p></div>` +
       t.map((m) => m.role === "user" ? `<div class="msg me">${esc(m.content)}</div>` : `<div class="msg ai">${md(m.content)}</div>`).join("");
     box.scrollTop = box.scrollHeight;
   }
@@ -1108,7 +1689,14 @@ button { cursor: pointer; }
       `When quizzing, ask one question at a time, wait for the answer, then say whether it was right and why.\n` +
       `When you correct Danish, show the corrected sentence in bold and explain the rule briefly.\n\n` +
       (words ? `The learner's saved vocabulary: ${words}\n\n` : "") +
-      (currentId ? `The learner's current note, titled "${noteTitle()}":\n<note>\n${noteText() || "(empty)"}\n</note>` : "The learner has no note open.");
+      (exOpen() ? exerciseContext()
+        : currentId ? `The learner's current note, titled "${noteTitle()}":\n<note>\n${noteText() || "(empty)"}\n</note>` : "The learner has no note open.");
+  }
+  function exerciseContext() {
+    const ex = currentEx;
+    const lines = ex.items.map((it, i) => `${i + 1}. ${it.given}\n   Learner's answer now: ${myAnswer(ex, i)}\n   Correct: ${it.correct || (it.answers || []).map((a) => a.join(" / ")).join(", ")}`).join("\n");
+    return (`The learner is doing an exercise titled "${ex.title}".\nInstructions: ${ex.instructions || "(none)"}\n` +
+      `The sentences, with the learner's current answers and the correct answers. The correct answers are for you only: don't reveal one until the learner has tried or asks for it.\n<exercise>\n${lines}\n</exercise>`).slice(0, P().budget + 4000);
   }
 
   async function sendChat(text) {
@@ -1262,6 +1850,7 @@ button { cursor: pointer; }
     }
     store.watchNotes(onNotes);
     store.watchVocab((list) => { vocab = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); renderVocab(); });
+    store.watchExercises(onExercises);
     if (getKey() && getModel()) aiOnFn(); else aiOff("Welcome! Open Settings and connect an AI service to turn on the tutor. Groq is free. Your notes work without it.");
   }
   boot();
