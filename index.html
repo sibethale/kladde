@@ -60,6 +60,25 @@ button { cursor: pointer; }
 .top { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
 .brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
 .brand h1 { font-family: var(--f-display); font-weight: 600; font-size: 24px; margin: 0; letter-spacing: -.01em; }
+.brand-btn { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.brand-btn:hover { color: var(--accent); }
+
+/* Home page */
+.home { max-width: 70ch; display: flex; flex-direction: column; gap: 18px; }
+.home h2 { font-family: var(--f-display); font-weight: 600; font-size: 30px; margin: 0; line-height: 1.15; text-wrap: balance; }
+.home h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sea); margin: 6px 0 0; }
+.home p { margin: 0; font-size: 15px; line-height: 1.6; }
+.home .lead { font-size: 17px; color: var(--muted); }
+.home ul, .home ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.55; }
+.home a { color: var(--sea); }
+.home code { font-family: var(--f-mono); font-size: 13px; background: var(--paper); border-radius: 4px; padding: 1px 5px; }
+.lang-toggle { display: inline-flex; gap: 3px; background: var(--paper); padding: 3px; border-radius: 8px; align-self: flex-start; }
+.lang-toggle button { border: 0; background: transparent; border-radius: 6px; padding: 5px 12px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.lang-toggle button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.ai-state { border-radius: 10px; padding: 12px 14px; font-size: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ai-state.on { background: var(--ok-soft); color: var(--ink); }
+.ai-state.off { background: var(--accent-soft); color: var(--ink); }
+.ai-state b { color: inherit; }
 .brand h1 .dot { color: var(--accent); }
 .brand span { color: var(--muted); font-size: 13px; }
 .level { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
@@ -272,7 +291,7 @@ button { cursor: pointer; }
 <body>
 
 <header class="top">
-  <div class="brand"><h1>Kladde<span class="dot">.</span></h1><span>Danish study notebook with an AI tutor</span></div>
+  <div class="brand"><h1><button type="button" id="homeBtn" class="brand-btn" title="Home: what Kladde is and how to turn on the AI tutor">Kladde<span class="dot">.</span></button></h1><span>Danish study notebook with an AI tutor</span></div>
   <label class="level" for="level">Level
     <select id="level">
       <option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option>
@@ -305,7 +324,7 @@ button { cursor: pointer; }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.10</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.11</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="banner" id="banner" hidden></div>
@@ -342,6 +361,62 @@ button { cursor: pointer; }
 
   <!-- The page -->
   <section class="pane page" aria-label="Note">
+    <!-- Home page -->
+    <div id="homeView" class="contents" hidden>
+      <div class="page-body">
+        <div class="home">
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" data-hl="en" aria-pressed="true">English</button>
+            <button type="button" data-hl="da" aria-pressed="false">Dansk</button>
+          </div>
+          <div class="ai-state" id="aiState"></div>
+
+          <div class="home" data-lang="en" lang="en">
+            <h2>Welcome to Kladde</h2>
+            <p class="lead">Kladde is your Danish study notebook. Write notes from your Danish lessons, practise with interactive exercises, collect new words, and get help from Lærer, an AI tutor that reads along with you.</p>
+            <h3>What you can do</h3>
+            <ul>
+              <li><b>Notes:</b> write your lesson notes. Check your grammar, translate, find useful words, or turn a PDF, PowerPoint, Word file or photo from class into a lesson note.</li>
+              <li><b>Exercises:</b> paste an exercise from class, like "put the word in the right place" or "fill in the blanks", and practise it by dragging words or typing. Check your answers and get the rule explained in Danish and English.</li>
+              <li><b>Vocab bank:</b> save words from your notes and let the tutor quiz you on them.</li>
+              <li><b>Lærer, your tutor:</b> ask anything about Danish in the panel on the right. Lærer can see the note or exercise you have open.</li>
+            </ul>
+            <h3>Turn on the AI tutor (free, about 5 minutes)</h3>
+            <ol>
+              <li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> and sign up. You can use your Google or GitHub account.</li>
+              <li>Click <b>Create API Key</b>, call it <code>kladde</code>, and copy the key. It starts with <code>gsk_</code>. You only see it once, so copy it straight away.</li>
+              <li>Click <b>Settings</b> at the top right (or the button below), choose <b>Groq</b>, paste the key into <b>API key</b>, and click <b>Save</b>.</li>
+            </ol>
+            <p>Groq is free, with a daily limit. For the best Danish, you can choose <b>Claude</b> in Settings instead. It costs a little, usually well under one cent per question.</p>
+            <h3>Where your work is saved</h3>
+            <p>Your notes, exercises, words and key are saved only in this browser, on this device. Use <b>Settings</b> &gt; <b>Download backup</b> now and then to keep a copy.</p>
+            <div class="row"><button type="button" class="btn primary" data-open-settings>Open Settings</button></div>
+          </div>
+
+          <div class="home" data-lang="da" lang="da" hidden>
+            <h2>Velkommen til Kladde</h2>
+            <p class="lead">Kladde er din notesbog til at lære dansk. Skriv noter fra din danskundervisning, øv dig med interaktive øvelser, saml nye ord, og få hjælp af Lærer, en AI-lærer, der læser med.</p>
+            <h3>Det kan du</h3>
+            <ul>
+              <li><b>Notes (noter):</b> skriv dine noter fra timerne. Tjek din grammatik, oversæt, find nyttige ord, eller lav en lektionsnote ud fra en PDF, PowerPoint, Word-fil eller et billede fra undervisningen.</li>
+              <li><b>Exercises (øvelser):</b> indsæt en øvelse fra undervisningen, fx "skriv ordet det rigtige sted" eller "udfyld hullerne", og øv dig ved at trække ord eller skrive. Tjek dine svar, og få reglen forklaret på dansk og engelsk.</li>
+              <li><b>Vocab bank (ordbank):</b> gem ord fra dine noter, og lad læreren høre dig i dem.</li>
+              <li><b>Lærer, din AI-lærer:</b> spørg om alt om dansk i feltet til højre. Lærer kan se den note eller øvelse, du har åben.</li>
+            </ul>
+            <h3>Sådan slår du AI-læreren til (gratis, ca. 5 minutter)</h3>
+            <ol>
+              <li>Gå til <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>, og opret en konto. Du kan bruge din Google- eller GitHub-konto.</li>
+              <li>Klik på <b>Create API Key</b>, kald nøglen <code>kladde</code>, og kopiér den. Den starter med <code>gsk_</code>. Du kan kun se den én gang, så kopiér den med det samme.</li>
+              <li>Klik på <b>Settings</b> øverst til højre (eller knappen nedenfor), vælg <b>Groq</b>, indsæt nøglen i <b>API key</b>, og klik på <b>Save</b>.</li>
+            </ol>
+            <p>Groq er gratis, men der er en daglig grænse. Vil du have det bedste dansk, kan du vælge <b>Claude</b> i Settings i stedet. Det koster lidt, som regel under 10 øre pr. spørgsmål.</p>
+            <h3>Hvor dit arbejde gemmes</h3>
+            <p>Dine noter, øvelser, ord og din nøgle gemmes kun i denne browser, på denne enhed. Brug <b>Settings</b> &gt; <b>Download backup</b> en gang imellem for at gemme en kopi.</p>
+            <div class="row"><button type="button" class="btn primary" data-open-settings>Åbn Settings</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- An open exercise -->
     <div id="exView" class="contents" hidden>
       <div class="page-head">
@@ -476,7 +551,7 @@ button { cursor: pointer; }
 
   // ---------- state ----------
   let store = null, sample = null, aiOn = false;
-  let pageMode = "blank"; // what the middle pane shows: "blank", "note", "exercise" or "newEx"
+  let pageMode = "home"; // what the middle pane shows: "home", "blank", "note", "exercise" or "newEx"
   let lastNoteId = null; // the last note you had open (for "Use my last open note")
   let exercises = [], currentEx = null;
   let notes = [], vocab = [], currentId = null, firstNotes = true;
@@ -792,6 +867,8 @@ button { cursor: pointer; }
     $("#hasNote").style.display = has ? "contents" : "none";
     $("#exView").hidden = pageMode !== "exercise";
     $("#exNew").hidden = pageMode !== "newEx";
+    $("#homeView").hidden = pageMode !== "home";
+    if (pageMode === "home") renderHome();
     updateGenCard();
   }
   $("#renameNote").onclick = () => { titleIn.focus(); titleIn.select(); };
@@ -911,7 +988,7 @@ button { cursor: pointer; }
     aiOn = false;
     document.querySelectorAll(".ai").forEach((b) => (b.disabled = true));
     $("#quick").querySelectorAll("button").forEach((b) => (b.disabled = true));
-    if (msg) banner(msg);
+    if (msg) banner(msg);    if (pageMode === "home") renderHome();
   }
   const noteText = () => editor.innerText.trim().slice(0, P().budget);
   const noteTitle = () => titleIn.value.trim() || "Untitled note";
@@ -1981,10 +2058,28 @@ button { cursor: pointer; }
     } catch { msg.textContent = "Couldn't reach the service. Check your internet connection."; }
   };
   function closeSettings() { $("#settings").hidden = true; }
+  // ---------- Home page ----------
+  function renderHome() {
+    const da = (lsGet("kladde-home-lang") || "en") === "da";
+    document.querySelectorAll("#homeView [data-lang]").forEach((el) => (el.hidden = el.dataset.lang !== (da ? "da" : "en")));
+    document.querySelectorAll("#homeView [data-hl]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.hl === "da") === da)));
+    const box = $("#aiState"), names = { groq: "Groq", openrouter: "OpenRouter", claude: "Claude" };
+    if (aiOn) {
+      box.className = "ai-state on";
+      box.innerHTML = da ? `✓ AI-læreren er slået til: <b>${esc(names[provider()])}</b> (${esc(getModel())}).` : `✓ The AI tutor is on: <b>${esc(names[provider()])}</b> (${esc(getModel())}).`;
+    } else {
+      box.className = "ai-state off";
+      box.innerHTML = da ? "AI-læreren er ikke slået til endnu. Følg de tre trin nedenfor." : "The AI tutor isn't on yet. Follow the three steps below.";
+    }
+  }
+  document.querySelectorAll("#homeView [data-hl]").forEach((b) => (b.onclick = () => { lsSet("kladde-home-lang", b.dataset.hl); renderHome(); }));
+  document.querySelectorAll("#homeView [data-open-settings]").forEach((b) => (b.onclick = () => openSettings()));
+  $("#homeBtn").onclick = async () => { await clearPage(); pageMode = "home"; renderPage(); setView("page"); };
+
   function aiOnFn() {
     aiOn = true; banner("");
     document.querySelectorAll(".ai").forEach((b) => (b.disabled = false));
-    $("#quick").querySelectorAll("button").forEach((b) => (b.disabled = false));
+    $("#quick").querySelectorAll("button").forEach((b) => (b.disabled = false));    if (pageMode === "home") renderHome();
   }
   $("#openSettings").onclick = openSettings;
   $("#closeSettings").onclick = closeSettings;
