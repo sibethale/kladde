@@ -232,6 +232,7 @@ button { cursor: pointer; }
 .ex-fb { grid-column: 2; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .ex-fb:empty { display: none; }
 .ex-fb .why { color: var(--muted); flex-basis: 100%; }
+.ex-fb .lang { display: inline-block; font-family: var(--f-mono); font-size: 10px; font-weight: 600; letter-spacing: .06em; color: var(--sea); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-right: 6px; vertical-align: 1px; }
 .ex-fb .answer { flex-basis: 100%; font-size: 15px; }
 .ex-fb .answer b { color: var(--ok); }
 .ok-t { color: var(--ok); font-weight: 600; }
@@ -304,7 +305,7 @@ button { cursor: pointer; }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.9</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.10</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="banner" id="banner" hidden></div>
@@ -1292,6 +1293,13 @@ button { cursor: pointer; }
     if (p > end) return null;
     return { g: p, how: subj ? "inv" : "main", verb: tokens[v], subj, pron };
   }
+  function ruleWhyDa(word, r) {
+    if (r.how === "sub") return `"${word}": Sætningen starter med "${r.word0}", så det er en ledsætning, og adverbiet står før verbet "${r.verb}".`;
+    let s = `"${word}": Det er en hovedsætning, så adverbiet står efter verbet "${r.verb}"`;
+    if (r.how === "inv") s += `, og efter subjektet "${r.subj}", fordi subjektet kommer efter verbet her (inversion)`;
+    if (r.pron) s += `. Et kort pronomen som "${r.pron}" står før adverbiet`;
+    return s + ".";
+  }
   function ruleWhy(word, r) {
     if (r.how === "sub") return `"${word}": the clause starts with "${r.word0}", so it's a subordinate clause, and the adverb goes before the verb "${r.verb}".`;
     let s = `"${word}": main clause, so the adverb goes after the verb "${r.verb}"`;
@@ -1309,7 +1317,7 @@ button { cursor: pointer; }
       const idx = infos.findIndex((x) => wordKey(String(x.word || "")) === wordKey(c.word));
       const info = idx >= 0 ? infos.splice(idx, 1)[0] : null;
       const r = info ? ruleGap(item.tokens, c, info) : null;
-      if (r) { c.answers = [r.g]; c.rule = true; c.ruleWhy = ruleWhy(c.word, r); }
+      if (r) { c.answers = [r.g]; c.rule = true; c.ruleInfo = r; c.ruleWhy = ruleWhy(c.word, r); }
     });
   }
   // Fills in answers from the AI's own sentence for any word the rules didn't place
@@ -1320,7 +1328,9 @@ button { cursor: pointer; }
       if (g) g.forEach((x, i) => { if (!item.chips[i].rule && !item.chips[i].answers.includes(x)) item.chips[i].answers.push(x); });
     });
     item.auto = item.chips.length > 0 && item.chips.every((c) => c.answers.length);
-    item.why = item.chips.every((c) => c.rule) ? item.chips.map((c) => c.ruleWhy).join(" ") : (item.aiWhy ?? item.why);
+    const allRules = item.chips.every((c) => c.rule && c.ruleInfo);
+    item.why = allRules ? item.chips.map((c) => ruleWhy(c.word, c.ruleInfo)).join(" ") : (item.aiWhy ?? item.why);
+    item.whyDa = allRules ? item.chips.map((c) => ruleWhyDa(c.word, c.ruleInfo)).join(" ") : (item.aiWhyDa || "");
   }
   const needsRules = (it) => it.chips.some((c) => !c.rule && ADVS.has(wordKey(c.word)));
   // A second, simpler question to the AI: just the verb and subject for each word in brackets
@@ -1355,8 +1365,8 @@ button { cursor: pointer; }
 
   function freshState(ex) {
     return ex.type === "place"
-      ? { pos: ex.items.map((it) => it.chips.map((c) => c.start)), moved: ex.items.map((it) => it.chips.map(() => false)), shown: {}, checked: false }
-      : { val: ex.items.map((it) => it.answers.map(() => "")), shown: {}, checked: false };
+      ? { pos: ex.items.map((it) => it.chips.map((c) => c.start)), moved: ex.items.map((it) => it.chips.map(() => false)), shown: {}, itemChecked: {}, checked: false }
+      : { val: ex.items.map((it) => it.answers.map(() => "")), shown: {}, itemChecked: {}, checked: false };
   }
 
   // Turns the AI's JSON into an exercise the app can run
@@ -1368,7 +1378,7 @@ button { cursor: pointer; }
         const { tokens, chips } = parsePlace(given);
         chips.forEach((c) => (c.answers = []));
         // With the free AI services, adverb positions come from the word-order rules, not the AI's own answer
-        const item = { given, correct: String(it.correct || ""), alternatives: Array.isArray(it.alternatives) ? it.alternatives.map(String) : [], aiWhy: String(it.why || ""), why: String(it.why || ""), tokens, chips, auto: false };
+        const item = { given, correct: String(it.correct || ""), alternatives: Array.isArray(it.alternatives) ? it.alternatives.map(String) : [], aiWhy: String(it.why || ""), why: String(it.why || ""), aiWhyDa: String(it.whyDa || ""), whyDa: String(it.whyDa || ""), tokens, chips, auto: false };
         if (provider() !== "claude") applyRules(item, it.words);
         finishItem(item);
         return item;
@@ -1378,7 +1388,7 @@ button { cursor: pointer; }
         const a = Array.isArray(it.answers) ? it.answers[b] : undefined;
         return (Array.isArray(a) ? a : a ? [a] : []).map(String).filter(Boolean);
       });
-      return { given, parts, answers, why: String(it.why || ""), correct: String(it.correct || "") };
+      return { given, parts, answers, why: String(it.why || ""), whyDa: String(it.whyDa || ""), correct: String(it.correct || "") };
     }).filter((it) => (type === "place" ? it.tokens.length && it.chips.length : it.parts.length > 1));
     const ex = {
       title: String(raw?.title || fallbackTitle || "Exercise").slice(0, 120),
@@ -1454,7 +1464,8 @@ button { cursor: pointer; }
   // Older exercises get their answer key checked once, automatically
   const fixing = new Map();
   function autoFix(ex) {
-    if (ex.type !== "place" || provider() === "claude" || ex.rulesChecked || !aiOn) return null;
+    const oldStyle = ex.items.some((it) => it.chips?.some((c) => c.rule && !c.ruleInfo));
+    if (ex.type !== "place" || provider() === "claude" || (ex.rulesChecked && !oldStyle) || !aiOn) return null;
     if (fixing.has(ex.id)) return fixing.get(ex.id);
     const p = (async () => {
       setStatus("Checking answer key...");
@@ -1494,23 +1505,28 @@ button { cursor: pointer; }
     const cls = ["chip-w", moved ? "placed" : "start", grade ? (grade[k] ? "ok" : "bad") : "", sel && sel.i === i && sel.c === k ? "selected" : ""].join(" ");
     return `<button type="button" class="${cls}" data-i="${i}" data-c="${k}" aria-label="${esc(c.word)}. Drag it, or use the arrow keys to move it.">${moved ? esc(c.word) : "(" + esc(c.word) + ")"}</button>`;
   }
+  const isChecked = (st, i) => st.checked || !!st.itemChecked?.[i];
   function feedbackHtml(ex, i) {
-    const it = ex.items[i], st = ex.state, showing = st.checked || st.shown[i];
+    const it = ex.items[i], st = ex.state, checked = isChecked(st, i), showing = checked || st.shown[i];
     let fb = "";
     if (showing) {
       const r = itemResult(ex, i);
       if (r === true) fb += '<span class="ok-t">✓ Rigtigt!</span>';
-      else if (r === false) fb += '<span class="bad-t">Not quite.</span>';
-      // The answer is shown underneath; your own words stay where you put them
-      if (st.shown[i] || r === null) fb += `<span class="answer">Answer: ${answerHtml(ex, it)}</span>`;
-      if (it.why && (r !== true || st.shown[i])) fb += `<span class="why">${esc(it.why)}</span>`;
+      else if (r === false) fb += '<span class="bad-t">Ikke helt. Not quite.</span>';
+      else if (!st.shown[i]) fb += '<span class="note-msg">This one can\'t be checked automatically. Press Show answer to compare.</span>';
+      // Explanation in Danish and English, without giving the answer away
+      if (it.whyDa) fb += `<span class="why" lang="da"><span class="lang">DA</span>${esc(it.whyDa)}</span>`;
+      if (it.why) fb += `<span class="why"><span class="lang">EN</span>${esc(it.why)}</span>`;
+      // Your own words stay where you put them; the answer goes underneath
+      if (st.shown[i]) fb += `<span class="answer">Answer: ${answerHtml(ex, it)}</span>`;
     }
+    fb += `<button class="btn small sea" type="button" data-act="check" data-i="${i}">Check answer</button>`;
     fb += `<button class="btn small" type="button" data-act="show" data-i="${i}">${st.shown[i] ? "Hide answer" : "Show answer"}</button>`;
     fb += `<button class="btn small ai" type="button" data-act="ask" data-i="${i}"${aiOn ? "" : " disabled"}>Ask tutor</button>`;
     return fb;
   }
   function itemHtml(ex, i) {
-    const it = ex.items[i], st = ex.state, showing = st.checked || st.shown[i];
+    const it = ex.items[i], st = ex.state, showing = isChecked(st, i) || st.shown[i];
     let line = "";
     if (ex.type === "place") {
       const grade = showing && it.auto ? gradePlace(it, st.pos[i]) : null;
@@ -1657,6 +1673,12 @@ button { cursor: pointer; }
     if (act) {
       const i = +act.dataset.i;
       if (act.dataset.act === "show") waitForFix().then(() => showAnswer(i));
+      else if (act.dataset.act === "check") waitForFix().then(() => {
+        const st = currentEx.state;
+        st.itemChecked = st.itemChecked || {};
+        st.itemChecked[i] = true;
+        saveEx(); refreshItem(i); renderExList();
+      });
       else if (act.dataset.act === "ask") askAboutItem(i);
       else if (act.dataset.act === "bank") {
         // Put the word in the box you were last in, or else the first empty box
@@ -1747,9 +1769,10 @@ button { cursor: pointer; }
     `- Use correct Danish word order: in a main clause, a central adverb (ikke, aldrig, altid, også, tit, gerne, nok, faktisk, virkelig...) goes right after the finite verb, or after the subject when the subject comes after the verb. In a subordinate clause (at, fordi, når, hvis, selvom, der, som, hvorfor...), it goes before the finite verb.\n` +
     `For "fill" items:\n- "given": the sentence with each blank written as ___ (three underscores). Keep any hint in parentheses after the blank.\n- "answers": for each blank in order, a list of accepted answers.\n- "correct": the full sentence with the blanks filled in.\n` +
     `"why" (both types), written BEFORE "correct": in short English, work out the rule. For a "place" item, for each word in parentheses say which clause it belongs to (main or subordinate), what that clause's finite verb is, whether the subject comes after the verb (inversion), and so where the word goes. For a "fill" item, explain the form in one sentence. Then write "correct" so it follows exactly what "why" says.\n` +
+    `"whyDa" (both types): the same explanation in simple Danish.\n` +
     `"wordBank": the words to choose from if the exercise gives a list, otherwise [].\n` +
     `"instructions": the exercise instructions in the original language, then a short English translation in parentheses.\n` +
-    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "words": [{"word": "...", "verb": "...", "subject": "..."}], "why": "...", "correct": "...", "alternatives": [], "answers": [["..."]]}]}. Don't use em dashes.`;
+    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "words": [{"word": "...", "verb": "...", "subject": "..."}], "why": "...", "whyDa": "...", "correct": "...", "alternatives": [], "answers": [["..."]]}]}. Don't use em dashes.`;
 
   async function saveNewExercise(raw, fallbackTitle, msgEl) {
     const ex = buildExercise(raw, fallbackTitle);
