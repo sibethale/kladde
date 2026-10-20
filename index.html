@@ -276,6 +276,53 @@ button { cursor: pointer; }
 .drop.over, .page-body.over { border-color: var(--sea); background: var(--sea-soft); }
 .page-body.over { outline: 2px dashed var(--sea); outline-offset: -8px; }
 
+/* Practice */
+.pr { display: flex; flex-direction: column; gap: 16px; max-width: 900px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; position: relative; overflow: hidden; }
+.tile b { font-family: var(--f-display); font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile b small { font-size: 15px; color: var(--muted); font-weight: 500; }
+.tile span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.tile i { position: absolute; left: 0; bottom: 0; height: 4px; width: var(--p); background: var(--ok); }
+.pr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pr-card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }
+.pr-card h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--sea); }
+.pr-card h4 { margin: 4px 0 0; font-size: 13px; }
+.pr-card p { margin: 0; font-size: 14px; line-height: 1.55; }
+.pr-card ul { margin: 0; padding-left: 1.2em; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+.pr-card del { color: var(--accent); } .pr-card ins { color: var(--ok); text-decoration: none; font-weight: 600; }
+.pr-card .task { white-space: pre-wrap; }
+.pr-card .sel { width: auto; flex: 1; min-width: 12em; }
+.bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; height: 90px; align-items: end; }
+.bars span { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 3px; }
+.bars i { display: block; width: 100%; min-height: 2px; background: var(--sea-soft); border-radius: 3px 3px 0 0; box-shadow: inset 0 0 0 1px var(--sea); }
+.bars i.goal { background: var(--ok-soft); box-shadow: inset 0 0 0 1px var(--ok); }
+.bars em { font-style: normal; font-size: 10px; color: var(--muted); font-family: var(--f-mono); }
+.flash { border: 1px solid var(--line); border-radius: 14px; padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--paper); }
+.flash .fw { font-family: var(--f-display); font-size: 34px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.flash .fw.small { font-size: 20px; }
+.flash .fsub { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.flash .bw { font-size: 22px; color: var(--sea); font-weight: 500; }
+.flash .fex { font-style: italic; color: var(--muted); }
+.flash.done p { margin: 0; }
+.grades { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.grades .btn { flex-direction: column; gap: 2px; padding: 10px 6px; white-space: normal; }
+.grades .btn:only-child { grid-column: 1 / -1; }
+.grades small { font-size: 11px; opacity: .8; font-weight: 400; }
+kbd { font-family: var(--f-mono); font-size: 10px; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; opacity: .6; margin-left: 4px; }
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.opts.long { grid-template-columns: minmax(0, 1fr); }
+.opt { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; font-size: 16px; color: var(--ink); }
+.opt:hover:not(:disabled) { border-color: var(--sea); }
+.opt.ok { border-color: var(--ok); background: var(--ok-soft); }
+.opt.bad { border-color: var(--accent); background: var(--accent-soft); }
+.timer { font-family: var(--f-mono); font-size: 16px; font-variant-numeric: tabular-nums; color: var(--sea); }
+.due-tag { grid-column: 1; font-size: 11px; font-family: var(--f-mono); color: var(--muted); }
+.due-tag.d { color: var(--accent); } .due-tag.m { color: var(--ok); }
+#examAnswer { resize: vertical; font-size: 15px; line-height: 1.6; }
+details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
+@media (max-width: 680px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pr-grid, .opts { grid-template-columns: minmax(0, 1fr); } .grades { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* Profiles and sync */
 .profile-btn { max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
 .profile-btn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--sea); margin-right: 2px; flex: none; }
@@ -305,6 +352,7 @@ button { cursor: pointer; }
 <header class="top">
   <div class="brand"><h1><button type="button" id="homeBtn" class="brand-btn" title="Home: what Kladde is and how to turn on the AI tutor">Kladde<span class="dot">.</span></button></h1><span>Danish study notebook with an AI tutor</span></div>
   <span class="sync-state" id="syncState" hidden></span>
+  <button class="btn sea" id="practiceBtn" type="button">Practice</button>
   <button class="btn profile-btn" id="profileBtn" type="button" title="Switch profile"></button>
   <label class="level" for="level">Level
     <select id="level">
@@ -348,7 +396,7 @@ button { cursor: pointer; }
     <h3>Backup</h3>
     <p>Your notes and words are stored in this browser. Download a backup now and then, and use it to move your notes to another computer.</p>
     <div class="row"><button class="btn" id="exportBtn">Download backup</button><label class="btn" for="importFile" style="flex-direction:row">Restore from backup<input type="file" id="importFile" accept=".json,application/json" hidden></label><span class="note-msg" id="backupMsg"></span></div>
-    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.13</span><button class="btn" id="closeSettings">Close</button></div>
+    <div class="row" style="justify-content:space-between"><span class="note-msg">App version 2026-10-20.14</span><button class="btn" id="closeSettings">Close</button></div>
   </div>
 </div>
 <div class="sheet-bg" id="profiles" hidden>
@@ -396,6 +444,8 @@ button { cursor: pointer; }
 
   <!-- The page -->
   <section class="pane page" aria-label="Note">
+    <!-- Practice -->
+    <div id="prView" class="contents" hidden><div class="page-body" id="prBody"></div></div>
     <!-- Home page -->
     <div id="homeView" class="contents" hidden>
       <div class="page-body">
@@ -414,6 +464,7 @@ button { cursor: pointer; }
               <li><b>Notes:</b> write your lesson notes. Check your grammar, translate, find useful words, or turn a PDF, PowerPoint, Word file or photo from class into a lesson note.</li>
               <li><b>Exercises:</b> paste an exercise from class, like "put the word in the right place" or "fill in the blanks", and practise it by dragging words or typing. Check your answers and get the rule explained in Danish and English.</li>
               <li><b>Vocab bank:</b> save words from your notes and let the tutor quiz you on them.</li>
+              <li><b>Practice</b> (button at the top): review your words with flashcards that come back just before you'd forget them, do timed drills, revise the sentences you got wrong, practise exam writing tasks (PD2, PD3, Studieprøven), talk with the tutor, and follow your progress and daily streak.</li>
               <li><b>Lærer, your tutor:</b> ask anything about Danish in the panel on the right. Lærer can see the note or exercise you have open.</li>
             </ul>
             <h3>Turn on the AI tutor (free, about 5 minutes)</h3>
@@ -445,6 +496,7 @@ button { cursor: pointer; }
               <li><b>Notes (noter):</b> skriv dine noter fra timerne. Tjek din grammatik, oversæt, find nyttige ord, eller lav en lektionsnote ud fra en PDF, PowerPoint, Word-fil eller et billede fra undervisningen.</li>
               <li><b>Exercises (øvelser):</b> indsæt en øvelse fra undervisningen, fx "skriv ordet det rigtige sted" eller "udfyld hullerne", og øv dig ved at trække ord eller skrive. Tjek dine svar, og få reglen forklaret på dansk og engelsk.</li>
               <li><b>Vocab bank (ordbank):</b> gem ord fra dine noter, og lad læreren høre dig i dem.</li>
+              <li><b>Practice</b> (knappen øverst): gennemgå dine ord med kort, der kommer igen, lige før du ville glemme dem, tag tidsbestemte øvelser, øv de sætninger, du havde forkert, øv skriveopgaver til prøverne (PD2, PD3, Studieprøven), tal med læreren, og følg dine fremskridt og din daglige stime.</li>
               <li><b>Lærer, din AI-lærer:</b> spørg om alt om dansk i feltet til højre. Lærer kan se den note eller øvelse, du har åben.</li>
             </ul>
             <h3>Sådan slår du AI-læreren til (gratis, ca. 5 minutter)</h3>
@@ -576,6 +628,7 @@ button { cursor: pointer; }
     <div class="tutor-head">
       <div class="avatar">L</div>
       <div><b>Lærer</b><small>Your Danish tutor</small></div>
+      <button class="btn small" id="speakToggle" type="button" aria-pressed="false" title="Read the tutor's replies aloud">Read aloud: off</button>
       <button class="btn small" id="clearChat">New chat</button>
     </div>
     <div class="chat" id="chat"></div>
@@ -587,6 +640,7 @@ button { cursor: pointer; }
     </div>
     <form class="composer" id="composer">
       <textarea id="chatIn" rows="1" placeholder="Ask in Danish or English..."></textarea>
+      <button class="btn" id="chatMic" type="button" hidden title="Speak in Danish">Speak</button>
       <button class="btn primary ai" id="chatSend" type="submit">Send</button>
       <button class="btn" id="chatStop" type="button" hidden>Stop</button>
     </form>
@@ -627,13 +681,14 @@ button { cursor: pointer; }
   function localStore(prefix, onChange) {
     const K = (k) => prefix + k;
     const load = (k) => { try { return new Map(Object.entries(JSON.parse(localStorage.getItem(K(k)) || "{}"))); } catch { return new Map(); } };
-    let n = load("notes"), v = load("vocab"), x = load("exercises"), del = load("deleted"), ok = true;
+    let n = load("notes"), v = load("vocab"), x = load("exercises"), st = load("stats"), del = load("deleted"), ok = true;
     const persist = (silent) => {
       try {
         localStorage.setItem(K("notes"), JSON.stringify(Object.fromEntries(n)));
         localStorage.setItem(K("vocab"), JSON.stringify(Object.fromEntries(v)));
         localStorage.setItem(K("exercises"), JSON.stringify(Object.fromEntries(x)));
         localStorage.setItem(K("deleted"), JSON.stringify(Object.fromEntries(del)));
+        localStorage.setItem(K("stats"), JSON.stringify(Object.fromEntries(st)));
       } catch { ok = false; throw { code: "storage" }; }
       if (!silent) onChange?.();
     };
@@ -655,7 +710,10 @@ button { cursor: pointer; }
       // Saving an exercise doesn't re-render the list, so dragging stays smooth
       saveExercise: async (id, d, quiet) => { x.set(id, stamp(d)); persist(); if (!quiet) emitX(); },
       deleteExercise: async (id) => { x.delete(id); gone(id); persist(); emitX(); },
-      exportAll: () => ({ app: "kladde", version: 3, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v), exercises: Object.fromEntries(x), deleted: Object.fromEntries(del) }),
+      updateVocab: async (id, d) => { const { id: _, ...rest } = d; v.set(id, stamp(rest)); persist(); emitV(); },
+      saveStat: (id, d) => { st.set(id, stamp(d)); persist(); },
+      stats: () => Object.fromEntries(st),
+      exportAll: () => ({ app: "kladde", version: 3, exportedAt: new Date().toISOString(), notes: Object.fromEntries(n), vocab: Object.fromEntries(v), exercises: Object.fromEntries(x), stats: Object.fromEntries(st), deleted: Object.fromEntries(del) }),
       importAll: (data) => {
         for (const [id, d] of Object.entries(data.notes || {})) n.set(id, d);
         for (const [id, d] of Object.entries(data.vocab || {})) v.set(id, d);
@@ -665,7 +723,7 @@ button { cursor: pointer; }
       // Used by sync: swap in the merged data without counting it as a new change
       replaceAll: (data) => {
         n = new Map(Object.entries(data.notes || {})); v = new Map(Object.entries(data.vocab || {}));
-        x = new Map(Object.entries(data.exercises || {})); del = new Map(Object.entries(data.deleted || {}));
+        x = new Map(Object.entries(data.exercises || {})); del = new Map(Object.entries(data.deleted || {})); st = new Map(Object.entries(data.stats || {}));
         persist(true); emitN(); emitV(); emitX();
       },
     };
@@ -734,9 +792,9 @@ button { cursor: pointer; }
   // Newest version of each item wins; deleted items stay deleted
   const itemTime = (d) => d?._t || d?.updatedAt || d?.createdAt || 0;
   function mergeData(a, b) {
-    const out = { app: "kladde", version: 3, notes: {}, vocab: {}, exercises: {}, deleted: {} };
+    const out = { app: "kladde", version: 3, notes: {}, vocab: {}, exercises: {}, stats: {}, deleted: {} };
     for (const src of [a, b]) for (const [id, t] of Object.entries(src?.deleted || {})) out.deleted[id] = Math.max(out.deleted[id] || 0, +t || 0);
-    for (const c of ["notes", "vocab", "exercises"]) {
+    for (const c of ["notes", "vocab", "exercises", "stats"]) {
       for (const src of [a, b]) for (const [id, d] of Object.entries(src?.[c] || {})) {
         if (!out[c][id] || itemTime(d) > itemTime(out[c][id])) out[c][id] = d;
       }
@@ -748,7 +806,7 @@ button { cursor: pointer; }
     for (const [id, t] of Object.entries(out.deleted)) if (t < cutoff) delete out.deleted[id];
     return out;
   }
-  const signature = (d) => JSON.stringify(["notes", "vocab", "exercises", "deleted"].map((c) =>
+  const signature = (d) => JSON.stringify(["notes", "vocab", "exercises", "stats", "deleted"].map((c) =>
     Object.entries(d?.[c] || {}).map(([id, v]) => id + ":" + (c === "deleted" ? v : itemTime(v))).sort()));
 
   let syncing = null, syncAgain = false, syncTimer = null, lastSync = 0;
@@ -1011,7 +1069,7 @@ button { cursor: pointer; }
   // Switching tabs closes whatever is open, so the middle page is blank
   async function clearPage() {
     if (currentId && dirty) await flushSave();
-    pageMode = "blank"; currentId = null; currentEx = null; sel = null;
+    pageMode = "blank"; currentId = null; currentEx = null; sel = null; stopDrill();
     $("#results").innerHTML = "";
     renderPage(); renderNoteList(); renderExList(); renderChat();
   }
@@ -1041,7 +1099,7 @@ button { cursor: pointer; }
     const list = $("#vocabList");
     $("#vocabFoot").hidden = $("#vocabList").hidden || !vocab.length;
     if (!vocab.length) { list.innerHTML = '<div class="empty">No words saved yet. Open a note and press <b>Find vocabulary</b> to collect words from it.</div>'; return; }
-    list.innerHTML = vocab.map((v) => `<div class="vocab-item"><span class="da">${esc(v.da)}</span><button class="x" data-id="${esc(v.id)}" title="Remove word" aria-label="Remove ${esc(v.da)}">×</button><span class="en">${esc(v.en)}</span>${v.example ? `<span class="ex">${esc(v.example)}</span>` : ""}</div>`).join("");
+    list.innerHTML = vocab.map((v) => `<div class="vocab-item"><span class="da">${esc(v.da)}</span><button class="x" data-id="${esc(v.id)}" title="Remove word" aria-label="Remove ${esc(v.da)}">×</button><span class="en">${esc(v.en)}</span>${v.example ? `<span class="ex">${esc(v.example)}</span>` : ""}<span class="due-tag ${isMastered(v) ? "m" : isDue(v) ? "d" : ""}">${esc(dueLabel(v))}</span></div>`).join("");
     list.querySelectorAll(".x").forEach((b) => (b.onclick = () => store.deleteVocab(b.dataset.id)));
   }
 
@@ -1076,6 +1134,8 @@ button { cursor: pointer; }
     $("#exView").hidden = pageMode !== "exercise";
     $("#exNew").hidden = pageMode !== "newEx";
     $("#homeView").hidden = pageMode !== "home";
+    $("#prView").hidden = pageMode !== "practice";
+    if (pageMode !== "practice") stopDrill();
     if (pageMode === "home") renderHome();
     updateGenCard();
   }
@@ -1965,7 +2025,9 @@ button { cursor: pointer; }
       else if (act.dataset.act === "check") waitForFix().then(() => {
         const st = currentEx.state;
         st.itemChecked = st.itemChecked || {};
+        const first = !st.itemChecked[i];
         st.itemChecked[i] = true;
+        if (first && itemResult(currentEx, i) === true) addXp(2, "sentences");
         saveEx(); refreshItem(i); renderExList();
       });
       else if (act.dataset.act === "ask") askAboutItem(i);
@@ -2014,7 +2076,10 @@ button { cursor: pointer; }
     }
   });
 
-  $("#exCheck").onclick = async () => { await waitForFix(); if (!currentEx) return; currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exCheck").onclick = async () => { await waitForFix(); if (!currentEx) return;
+    const right = currentEx.items.filter((_, i) => !currentEx.state.itemChecked?.[i] && itemResult(currentEx, i) === true).length;
+    if (!currentEx.state.checked && right) addXp(right * 2, "sentences", right);
+    currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
   $("#exShowAll").onclick = async () => { await waitForFix(); if (!currentEx) return; currentEx.items.forEach((_, i) => (currentEx.state.shown[i] = true)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
   $("#exFix").onclick = async () => {
     const ex = currentEx; if (!ex) return;
@@ -2197,6 +2262,7 @@ button { cursor: pointer; }
         onText: ({ text }) => { bubble.className = "msg ai"; bubble.innerHTML = md(text); box.scrollTop = box.scrollHeight; },
       });
       t.push({ role: "assistant", content: answer + (truncated ? "\n\n(Cut short. Ask me to continue.)" : "") });
+      speakReply(answer);
       renderChat();
     } catch (e) {
       if (e?.text) t.push({ role: "assistant", content: e.text });
@@ -2270,6 +2336,417 @@ button { cursor: pointer; }
     } catch { msg.textContent = "Couldn't reach the service. Check your internet connection."; }
   };
   function closeSettings() { $("#settings").hidden = true; }
+  // ---------- Practice: progress, flashcards, drills, mistakes, exam tasks, speaking ----------
+  const DAY = 864e5;
+  const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const startOfDay = (t = Date.now()) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const deviceId = (() => { let d = lsGet("kladde-device"); if (!d) { d = Math.random().toString(36).slice(2, 10); lsSet("kladde-device", d); } return d; })();
+
+  // Progress is counted per day (and per device, so synced devices add up)
+  function addXp(xp, field, count = 1) {
+    const id = dayKey() + "_" + deviceId, all = store.stats();
+    const cur = { day: dayKey(), xp: 0, reviews: 0, drills: 0, sentences: 0, exams: 0, ...(all[id] || {}) };
+    cur.xp += xp; if (field) cur[field] = (cur[field] || 0) + count;
+    store.saveStat(id, cur);
+  }
+  function statsByDay() {
+    const out = {};
+    for (const s of Object.values(store.stats())) {
+      const d = (out[s.day] ||= { xp: 0, reviews: 0, drills: 0, sentences: 0, exams: 0 });
+      for (const k of Object.keys(d)) d[k] += s[k] || 0;
+    }
+    return out;
+  }
+  function streak() {
+    const by = statsByDay(); let n = 0, t = startOfDay() + 12 * 3600e3;
+    if (!(by[dayKey(t)]?.xp > 0)) t -= DAY;
+    while (by[dayKey(t)]?.xp > 0) { n++; t -= DAY; }
+    return n;
+  }
+  const DAILY_GOAL = 20;
+
+  // Spaced repetition: each word comes back just before you'd forget it
+  const srsOf = (v) => v.srs || { due: 0, interval: 0, ease: 2.5, reps: 0, lapses: 0 };
+  const isDue = (v) => srsOf(v).due <= Date.now();
+  const isMastered = (v) => srsOf(v).interval >= 21;
+  function dueLabel(v) {
+    const s = srsOf(v);
+    if (isMastered(v)) return "Mastered";
+    if (s.due <= Date.now()) return "Due now";
+    const days = Math.round((startOfDay(s.due) - startOfDay()) / DAY);
+    return days <= 0 ? "Due later today" : days === 1 ? "Due tomorrow" : `Due in ${days} days`;
+  }
+  function nextSrs(s0, g) {
+    const s = { ...s0 };
+    if (g === 0) { s.reps = 0; s.interval = 0; s.lapses = (s.lapses || 0) + 1; s.ease = Math.max(1.3, s.ease - 0.2); s.due = Date.now() + 10 * 60e3; return s; }
+    if (g === 1) { s.interval = Math.max(1, Math.round(s.interval * 1.2)); s.ease = Math.max(1.3, s.ease - 0.15); }
+    else if (g === 2) s.interval = s.reps === 0 ? 1 : s.reps === 1 ? 3 : Math.round(s.interval * s.ease);
+    else { s.interval = s.reps === 0 ? 3 : Math.round(Math.max(1, s.interval) * s.ease * 1.3); s.ease += 0.15; }
+    s.reps++; s.due = startOfDay() + s.interval * DAY + 3 * 3600e3;
+    return s;
+  }
+  const ivLabel = (s) => (s.interval === 0 ? "10 min" : s.interval === 1 ? "1 day" : s.interval < 31 ? s.interval + " days" : Math.round(s.interval / 30) + " months");
+
+  // Reading Danish (and English) aloud
+  const looksDanish = (t) => /[æøåÆØÅ]/.test(t) || (String(t).match(/\b(jeg|du|det|er|ikke|og|en|et|har|på|til|med|hvad|der|som|kan|vil)\b/gi) || []).length >= 2;
+  function speak(text, lang) {
+    if (!synth) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang || (looksDanish(text) ? "da-DK" : "en-GB");
+    const v = synth.getVoices().find((x) => x.lang && x.lang.toLowerCase().startsWith(u.lang.slice(0, 2).toLowerCase()));
+    if (v) u.voice = v;
+    synth.speak(u);
+  }
+  const readAloudOn = () => lsGet("kladde-read-aloud") === "1";
+  function speakReply(md) {
+    if (!readAloudOn() || !synth) return;
+    synth.cancel();
+    String(md).replace(/[*`#>_]/g, "").split(/\n+/).map((l) => l.replace(/^\s*(\d+[.)]|[-•])\s*/, "").trim()).filter(Boolean).forEach((l) => speak(l));
+  }
+  function renderSpeakToggle() {
+    const on = readAloudOn(), b = $("#speakToggle");
+    b.hidden = !synth; b.textContent = "Read aloud: " + (on ? "on" : "off"); b.setAttribute("aria-pressed", String(on));
+  }
+  $("#speakToggle").onclick = () => { lsSet("kladde-read-aloud", readAloudOn() ? "0" : "1"); if (!readAloudOn()) synth?.cancel(); renderSpeakToggle(); };
+  renderSpeakToggle();
+
+  // Speaking to the tutor (Chrome and Edge understand Danish speech)
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  if (SR) $("#chatMic").hidden = false;
+  $("#chatMic").onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = "da-DK"; rec.interimResults = true; rec.continuous = false;
+    const before = $("#chatIn").value ? $("#chatIn").value + " " : "";
+    rec.onresult = (e) => { $("#chatIn").value = before + [...e.results].map((r) => r[0].transcript).join(""); autoGrow(); };
+    rec.onerror = (e) => { setStatus(e.error === "not-allowed" ? "Microphone blocked. Allow it in the browser." : "Didn't catch that. Try again.", "bad"); };
+    rec.onend = () => { rec = null; $("#chatMic").textContent = "Speak"; $("#chatMic").classList.remove("primary"); };
+    $("#chatMic").textContent = "Stop"; $("#chatMic").classList.add("primary");
+    try { rec.start(); } catch { rec = null; }
+  };
+
+  // The Practice page
+  let pr = { view: "hub" };
+  const prBody = $("#prBody");
+  function openPractice() {
+    if (currentId && dirty) flushSave();
+    stopDrill(); pr = { view: "hub" };
+    pageMode = "practice"; currentId = null; currentEx = null;
+    renderPage(); renderNoteList(); renderExList(); renderChat(); renderPractice(); setView("page");
+    prBody.scrollTop = 0;
+  }
+  $("#practiceBtn").onclick = openPractice;
+  function updatePracticeBtn() { const n = vocab.filter(isDue).length; $("#practiceBtn").textContent = n ? `Practice (${n} due)` : "Practice"; }
+
+  function collectMistakes() {
+    const out = { place: [], fill: [] }, seen = new Set();
+    for (const ex of exercises) {
+      const st = ex.state; if (!st || /^My mistakes/.test(ex.title)) continue;
+      ex.items.forEach((it, i) => {
+        if (!(st.checked || st.itemChecked?.[i] || st.shown?.[i])) return;
+        const r = itemResult(ex, i);
+        if ((r === false || (st.shown?.[i] && r !== true)) && !seen.has(it.given)) { seen.add(it.given); out[ex.type].push(JSON.parse(JSON.stringify(it))); }
+      });
+    }
+    return out;
+  }
+  function renderPractice() {
+    if (pr.view === "review") return renderReview();
+    if (pr.view === "drill") return renderDrill();
+    if (pr.view === "exam") return renderExam();
+    const by = statsByDay(), today = by[dayKey()] || { xp: 0 }, due = vocab.filter(isDue), weak = vocab.filter((v) => srsOf(v).lapses > 0);
+    const mastered = vocab.filter(isMastered).length, mis = collectMistakes(), misN = mis.place.length + mis.fill.length;
+    let right = 0, checked = 0;
+    for (const ex of exercises) ex.items.forEach((_, i) => { const st = ex.state; if (!st || !(st.checked || st.itemChecked?.[i])) return; const r = itemResult(ex, i); if (r !== null) { checked++; if (r) right++; } });
+    const days = [...Array(14)].map((_, k) => { const t = startOfDay() + 12 * 3600e3 - (13 - k) * DAY; return { t, xp: by[dayKey(t)]?.xp || 0 }; });
+    const maxXp = Math.max(DAILY_GOAL, ...days.map((d) => d.xp));
+    prBody.innerHTML = `<div class="pr">
+      <h2 class="sheet-title">Practice</h2>
+      <div class="tiles">
+        <div class="tile"><b>${streak()}</b><span>day streak</span></div>
+        <div class="tile"><b>${today.xp}<small>/${DAILY_GOAL}</small></b><span>points today</span><i style="--p:${Math.min(100, (today.xp / DAILY_GOAL) * 100)}%"></i></div>
+        <div class="tile"><b>${due.length}</b><span>words due</span></div>
+        <div class="tile"><b>${mastered}<small>/${vocab.length}</small></b><span>words mastered</span></div>
+      </div>
+      <div class="pr-grid">
+        <section class="pr-card"><h3>Review your words</h3>
+          <p>Flashcards that come back just before you'd forget them. Say how well you knew each word, and the app plans the next review.</p>
+          <div class="row wrap"><button class="btn primary" data-pr="review" ${due.length ? "" : "disabled"}>Review ${due.length} due word${due.length === 1 ? "" : "s"}</button>
+          <button class="btn" data-pr="weak" ${weak.length ? "" : "disabled"}>Weak words (${weak.length})</button>
+          <button class="btn" data-pr="all" ${vocab.length ? "" : "disabled"}>All words</button></div>
+          ${vocab.length ? "" : '<p class="note-msg">Add words first: open a note and press <b>Find vocabulary</b>.</p>'}</section>
+        <section class="pr-card"><h3>Timed drill</h3>
+          <p>A quick mix of your words, word-order questions from your exercises, and fill-in sentences.</p>
+          <div class="row wrap"><button class="btn sea" data-pr="drill" data-min="5" data-mode="speed">Speed round, 5 min</button>
+          <button class="btn sea" data-pr="drill" data-min="10" data-mode="mix">Balanced, 10 min</button>
+          <button class="btn sea" data-pr="drill" data-min="20" data-mode="mix">Deep dive, 20 min</button></div></section>
+        <section class="pr-card"><h3>Revise my mistakes</h3>
+          <p>${misN ? `You have <b>${misN}</b> exercise sentence${misN === 1 ? "" : "s"} you got wrong or looked up. Practise them again as a new exercise.` : "When you check exercises, the sentences you get wrong are collected here."}</p>
+          <div class="row wrap"><button class="btn primary" data-pr="mistakes" ${misN ? "" : "disabled"}>Make a mistakes exercise</button></div></section>
+        <section class="pr-card"><h3>Exam practice</h3>
+          <p>Get a writing task like the ones in the Danish exams, write your answer, and get feedback on it.</p>
+          <div class="row wrap"><select class="sel" id="examPick" aria-label="Exam">${EXAMS.map((e) => `<option value="${e.id}">${esc(e.name)}</option>`).join("")}</select>
+          <button class="btn primary ai" data-pr="exam" ${aiOn ? "" : "disabled"}>Get a writing task</button></div>
+          ${aiOn ? "" : '<p class="note-msg">Needs the AI tutor. Turn it on in Settings.</p>'}</section>
+        <section class="pr-card"><h3>Speaking practice</h3>
+          <p>Have a short conversation in Danish with the tutor. ${SR ? "Press <b>Speak</b> next to the chat box to answer out loud." : "This browser can't hear speech, so type your answers, or use Chrome or Edge to speak."} The tutor's replies are read aloud.</p>
+          <div class="row wrap"><button class="btn primary ai" data-pr="talk" ${aiOn ? "" : "disabled"}>Start a conversation</button></div></section>
+        <section class="pr-card"><h3>Your progress</h3>
+          <div class="bars" role="img" aria-label="Points per day for the last 14 days">${days.map((d) => `<span title="${esc(new Date(d.t).toLocaleDateString(undefined, { day: "numeric", month: "short" }))}: ${d.xp} points"><i style="height:${Math.round((d.xp / maxXp) * 100)}%" class="${d.xp >= DAILY_GOAL ? "goal" : ""}"></i><em>${new Date(d.t).toLocaleDateString(undefined, { weekday: "narrow" })}</em></span>`).join("")}</div>
+          <p class="note-msg">Points for the last 14 days. Daily goal: ${DAILY_GOAL} points (1 per word reviewed or drill answer right, 2 per exercise sentence right, 10 per exam task).</p>
+          <p>${vocab.length} words in your bank, ${mastered} mastered. ${checked ? `${right} of ${checked} checked exercise sentences right (${Math.round((right / checked) * 100)}%).` : "No exercise sentences checked yet."}</p></section>
+      </div></div>`;
+  }
+  prBody.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-pr]"); if (!b) return;
+    const a = b.dataset.pr;
+    if (a === "review") startReview(vocab.filter(isDue), "Due words");
+    else if (a === "weak") startReview(vocab.filter((v) => srsOf(v).lapses > 0), "Weak words");
+    else if (a === "all") startReview(vocab.slice(), "All words");
+    else if (a === "drill") startDrill(+b.dataset.min, b.dataset.mode);
+    else if (a === "mistakes") makeMistakesExercise();
+    else if (a === "exam") startExam($("#examPick").value);
+    else if (a === "talk") {
+      lsSet("kladde-read-aloud", "1"); renderSpeakToggle(); setView("tutor");
+      sendChat(`Let's practise speaking Danish. Ask me one short, everyday question at a time, in Danish at my level (${level()}). When I answer, gently correct my Danish (show the corrected sentence in bold), then ask the next question. Keep every reply short.`);
+    }
+    else if (a === "hub") { stopDrill(); pr = { view: "hub" }; renderPractice(); }
+  });
+
+  // Flashcard review
+  function startReview(list, title) {
+    if (!list.length) return;
+    pr = { view: "review", title, queue: shuffle(list.map((v) => v.id)), flipped: false, done: 0, again: 0, dir: lsGet("kladde-card-dir") || "da" };
+    renderPractice();
+  }
+  function renderReview() {
+    while (pr.queue.length && !vocab.find((v) => v.id === pr.queue[0])) pr.queue.shift();
+    const back = '<button class="btn small" data-pr="hub">Back to Practice</button>';
+    if (!pr.queue.length) {
+      prBody.innerHTML = `<div class="pr"><div class="row wrap">${back}</div><div class="flash done"><h2 class="sheet-title">Done!</h2><p>You reviewed ${pr.done} card${pr.done === 1 ? "" : "s"}${pr.again ? `, and ${pr.again} came back for another go` : ""}.</p></div></div>`;
+      return;
+    }
+    const v = vocab.find((x) => x.id === pr.queue[0]), s = srsOf(v), front = pr.dir === "da" ? v.da : v.en, rear = pr.dir === "da" ? v.en : v.da;
+    const grades = [["Again", 0], ["Hard", 1], ["Good", 2], ["Easy", 3]];
+    prBody.innerHTML = `<div class="pr">
+      <div class="row wrap">${back}<span class="note-msg">${esc(pr.title)} · ${pr.queue.length} left</span><span class="spacer"></span>
+      <button class="btn small" data-rv="dir">${pr.dir === "da" ? "Danish first" : "English first"}</button></div>
+      <div class="flash" lang="${pr.dir}">
+        <div class="fw">${esc(front)}</div>
+        ${synth ? `<button class="btn small" data-rv="say">Listen</button>` : ""}
+        ${pr.flipped ? `<div class="bw">${esc(rear)}</div>${v.example ? `<div class="fex" lang="da">${esc(v.example)}</div>` : ""}` : ""}
+      </div>
+      ${pr.flipped
+        ? `<div class="grades">${grades.map(([l, g], k) => `<button class="btn ${g === 2 ? "primary" : ""}" data-rv="g" data-g="${g}"><b>${l}</b><small>${esc(ivLabel(nextSrs(s, g)))}</small><kbd>${k + 1}</kbd></button>`).join("")}</div>`
+        : `<div class="grades"><button class="btn primary" data-rv="flip">Show answer <kbd>Space</kbd></button></div>`}
+      <p class="note-msg">Again: you didn't know it. Hard, Good, Easy: how easily it came to you. The small text shows when you'll see the card next.</p></div>`;
+  }
+  function gradeCard(g) {
+    const v = vocab.find((x) => x.id === pr.queue[0]); if (!v) return;
+    store.updateVocab(v.id, { ...v, srs: nextSrs(srsOf(v), g) });
+    addXp(1, "reviews");
+    pr.queue.shift(); pr.done++; pr.flipped = false;
+    if (g === 0) { pr.again++; pr.queue.splice(Math.min(3, pr.queue.length), 0, v.id); }
+    renderPractice();
+  }
+  prBody.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-rv]"); if (!b || pr.view !== "review") return;
+    const a = b.dataset.rv, v = vocab.find((x) => x.id === pr.queue[0]);
+    if (a === "flip") { pr.flipped = true; renderPractice(); }
+    else if (a === "g") gradeCard(+b.dataset.g);
+    else if (a === "say" && v) speak(pr.dir === "da" ? v.da : v.en, pr.dir === "da" ? "da-DK" : "en-GB");
+    else if (a === "dir") { pr.dir = pr.dir === "da" ? "en" : "da"; lsSet("kladde-card-dir", pr.dir); pr.flipped = false; renderPractice(); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (pageMode !== "practice" || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) return;
+    if (pr.view === "review") {
+      if (!pr.flipped && (e.key === " " || e.key === "Enter")) { e.preventDefault(); pr.flipped = true; renderPractice(); }
+      else if (pr.flipped && /^[1-4]$/.test(e.key)) gradeCard(+e.key - 1);
+    }
+  });
+
+  // Timed drills, built from your own words and exercises
+  const sentenceWith = (it, pos) => {
+    const out = [];
+    for (let g = 0; g <= it.tokens.length; g++) { it.chips.forEach((c, k) => { if (pos[k] === g) out.push(c.word); }); if (g < it.tokens.length) out.push(it.tokens[g]); }
+    return joinTokens(out);
+  };
+  function buildQuestions(mode) {
+    const qs = [], words = vocab.filter((v) => v.da && v.en);
+    if (words.length >= 4) for (const v of words) {
+      const others = shuffle(words.filter((w) => w.id !== v.id && w.en !== v.en)).slice(0, 3);
+      if (others.length === 3) qs.push({ kind: "mc", prompt: v.da, sub: "What does this mean?", options: shuffle([v.en, ...others.map((o) => o.en)]), answer: v.en, lang: "da" });
+      if (mode !== "speed") qs.push({ kind: "type", prompt: v.en, sub: "Write it in Danish", answers: [v.da, v.da.replace(/^(en|et|at)\s+/i, "")], show: v.da });
+    }
+    for (const ex of exercises) for (const it of ex.items || []) {
+      if (ex.type === "place" && it.auto && it.chips?.length) {
+        const correct = sentenceWith(it, it.chips.map((c) => c.answers[0])), opts = new Set([correct]);
+        for (let n = 0; n < 30 && opts.size < 3; n++) {
+          const pos = it.chips.map((c) => c.answers[0]), k = Math.floor(Math.random() * pos.length), g = Math.floor(Math.random() * (it.tokens.length + 1));
+          if (it.chips[k].answers.includes(g) || isPunct(it.tokens[g - 1] || "x") && g === 0) continue;
+          pos[k] = g; opts.add(sentenceWith(it, pos));
+        }
+        if (opts.size >= 2) qs.push({ kind: "mc", prompt: "Which sentence has the right word order?", sub: "Words placed: " + it.chips.map((c) => c.word).join(", "), options: shuffle([...opts]), answer: correct, long: true });
+      }
+      if (ex.type === "fill" && mode !== "speed" && it.answers?.length && it.answers.every((a) => a.length)) {
+        qs.push({ kind: "type", prompt: it.parts.join(" ___ "), sub: it.answers.length > 1 ? "Fill in the blanks, separated by commas" : "Fill in the blank", answers: [it.answers.map((a) => a[0]).join(", ")], fill: it.answers, show: it.answers.map((a) => a[0]).join(", "), lang: "da" });
+      }
+    }
+    return shuffle(qs);
+  }
+  let drillTimer = null;
+  const timeLeft = () => { const left = Math.max(0, pr.end - Date.now()); return `${Math.floor(left / 60e3)}:${String(Math.floor((left % 60e3) / 1000)).padStart(2, "0")}`; };
+  function stopDrill() { clearInterval(drillTimer); drillTimer = null; }
+  function startDrill(min, mode) {
+    const qs = buildQuestions(mode);
+    if (qs.length < 3) { pr = { view: "drill", empty: true }; renderPractice(); return; }
+    pr = { view: "drill", qs, i: 0, right: 0, answered: 0, end: Date.now() + min * 60e3, min, picked: null };
+    stopDrill();
+    drillTimer = setInterval(() => {
+      const el = $("#drillTime"); if (!el) return;
+      const left = pr.end - Date.now();
+      if (left <= 0) finishDrill(); else el.textContent = timeLeft();
+    }, 500);
+    renderPractice();
+  }
+  function finishDrill() {
+    if (pr.view !== "drill" || pr.finished) return;
+    stopDrill(); pr.finished = true;
+    if (pr.answered) addXp(0, "drills");
+    renderPractice();
+  }
+  function renderDrill() {
+    const back = '<button class="btn small" data-pr="hub">Back to Practice</button>';
+    if (pr.empty) { prBody.innerHTML = `<div class="pr"><div class="row">${back}</div><div class="flash done"><p>There isn't enough to practise yet. Save at least 4 words in your Vocab bank, or make an exercise, then try again.</p></div></div>`; return; }
+    if (pr.finished || pr.i >= pr.qs.length) {
+      if (!pr.finished) { stopDrill(); pr.finished = true; if (pr.answered) addXp(0, "drills"); }
+      prBody.innerHTML = `<div class="pr"><div class="row">${back}</div><div class="flash done"><h2 class="sheet-title">${pr.right} of ${pr.answered} right</h2><p>${pr.answered ? `You earned ${pr.right} point${pr.right === 1 ? "" : "s"}.` : "No questions answered."}</p>
+        <div class="row" style="justify-content:center"><button class="btn primary" data-pr="drill" data-min="${pr.min}" data-mode="mix">Go again</button></div></div></div>`;
+      return;
+    }
+    const q = pr.qs[pr.i], done = pr.picked !== null;
+    let body;
+    if (q.kind === "mc") body = `<div class="opts ${q.long ? "long" : ""}">${q.options.map((o, k) => {
+      const cls = done ? (o === q.answer ? "ok" : o === pr.picked ? "bad" : "") : "";
+      return `<button class="opt ${cls}" data-dq="${k}" ${done ? "disabled" : ""} lang="${q.long ? "da" : "en"}">${esc(o)}</button>`; }).join("")}</div>`;
+    else body = `<form class="row" id="drillForm"><input class="inp" id="drillIn" autocomplete="off" autocapitalize="off" spellcheck="false" lang="da" ${done ? "disabled" : ""} value="${esc(pr.typed || "")}"><button class="btn primary" ${done ? "disabled" : ""}>Check</button></form>`;
+    const fb = done ? (pr.wasRight ? '<p class="ok-t">✓ Rigtigt!</p>' : `<p class="bad-t">Not quite. Answer: <span lang="da">${esc(q.show || q.answer)}</span></p>`) + '<div class="row"><button class="btn primary" id="drillNext">Next <kbd>Enter</kbd></button></div>' : "";
+    prBody.innerHTML = `<div class="pr"><div class="row wrap">${back}<span class="note-msg">Question ${pr.i + 1} · ${pr.right} right</span><span class="spacer"></span><span class="timer" id="drillTime">${timeLeft()}</span><button class="btn small" data-dr="stop">Finish now</button></div>
+      <div class="flash"><div class="fsub">${esc(q.sub)}</div><div class="fw ${q.long ? "small" : ""}" lang="${q.lang || "en"}">${esc(q.prompt)}</div></div>${body}${fb}</div>`;
+    if (q.kind === "type" && !done) $("#drillIn").focus();
+    if (done) $("#drillNext").focus();
+  }
+  function answerDrill(value) {
+    const q = pr.qs[pr.i];
+    let ok;
+    if (q.kind === "mc") ok = value === q.answer;
+    else if (q.fill) { const parts = String(value).split(","); ok = q.fill.every((a, k) => a.some((x) => normAns(x) === normAns(parts[k]))); }
+    else ok = q.answers.some((a) => normAns(a) === normAns(value));
+    pr.picked = value; pr.wasRight = ok; pr.answered++;
+    if (ok) { pr.right++; addXp(1); }
+    renderPractice();
+  }
+  prBody.addEventListener("click", (e) => {
+    if (pr.view !== "drill") return;
+    const o = e.target.closest("[data-dq]");
+    if (o && pr.picked === null) answerDrill(pr.qs[pr.i].options[+o.dataset.dq]);
+    if (e.target.closest("#drillNext")) { pr.i++; pr.picked = null; pr.typed = ""; renderPractice(); }
+    if (e.target.closest('[data-dr="stop"]')) finishDrill();
+  });
+  prBody.addEventListener("submit", (e) => {
+    if (e.target.id !== "drillForm") return;
+    e.preventDefault();
+    const v = $("#drillIn").value.trim(); if (!v) return;
+    pr.typed = v; answerDrill(v);
+  });
+
+  // Turn sentences you got wrong into a new exercise
+  async function makeMistakesExercise() {
+    const mis = collectMistakes(), date = new Date().toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    let last = null;
+    for (const type of ["place", "fill"]) {
+      if (!mis[type].length) continue;
+      const ex = { title: `My mistakes, ${date}${mis.place.length && mis.fill.length ? (type === "place" ? " (word order)" : " (fill in)") : ""}`,
+        instructions: "Sætninger, du havde forkert før. Prøv igen! (Sentences you got wrong before. Try again!)", type, items: mis[type], wordBank: [], rulesChecked: true };
+      ex.state = freshState(ex); ex.id = "x" + newId().slice(1); ex.createdAt = ex.updatedAt = Date.now();
+      await store.saveExercise(ex.id, ex); last = ex.id;
+    }
+    if (last) { showShelf("ex"); openExercise(last); }
+  }
+
+  // Exam writing practice
+  const EXAMS = [
+    { id: "pd2", name: "Prøve i Dansk 2 (PD2, about A2)", level: "A2" },
+    { id: "pd3", name: "Prøve i Dansk 3 (PD3, about B1)", level: "B1" },
+    { id: "sp", name: "Studieprøven (about B2)", level: "B2" },
+  ];
+  async function startExam(id) {
+    const ex = EXAMS.find((e) => e.id === id) || EXAMS[0];
+    pr = { view: "exam", exam: ex, loading: "Writing a task for you..." };
+    renderPractice();
+    try {
+      const t = await sample.json(
+        `Write one realistic written-production task like those in the Danish exam "${ex.name}" (level ${ex.level}). It should be an everyday writing task, such as an email, a message, a short text about your opinion or experience.\n` +
+        `Reply with only JSON: {"title": "short Danish title", "task": "the full task in Danish, as the exam would phrase it, with the points to cover", "taskEn": "the same task in English", "words": "the expected length, e.g. 80-120 ord", "criteria": ["what the examiner looks for, in English, 3 to 5 short points"]}. Don't use em dashes.`,
+        { maxTokens: 2500, cache: false }
+      );
+      pr.task = t; pr.loading = null; pr.answer = "";
+    } catch (e) { pr.loading = null; pr.error = errCopy(e); }
+    renderPractice();
+  }
+  function renderExam() {
+    const back = '<button class="btn small" data-pr="hub">Back to Practice</button>';
+    const head = `<div class="row wrap">${back}<span class="note-msg">${esc(pr.exam.name)}</span></div>`;
+    if (pr.loading) { prBody.innerHTML = `<div class="pr">${head}<p class="note-msg">${esc(pr.loading)}</p></div>`; return; }
+    if (pr.error) { prBody.innerHTML = `<div class="pr">${head}<p class="note-msg bad">${esc(pr.error)}</p></div>`; return; }
+    const t = pr.task || {}, words = (pr.answer || "").trim().split(/\s+/).filter(Boolean).length, fb = pr.feedback;
+    prBody.innerHTML = `<div class="pr">${head}
+      <section class="pr-card"><h3>${esc(t.title || "Writing task")}</h3>
+        <p lang="da" class="task">${esc(t.task || "")}</p>
+        <details><summary>In English</summary><p>${esc(t.taskEn || "")}</p></details>
+        <p class="note-msg">Length: ${esc(t.words || "")}${Array.isArray(t.criteria) && t.criteria.length ? ". The examiner looks at: " + t.criteria.map(esc).join("; ") : ""}</p></section>
+      <label class="note-msg" for="examAnswer">Your answer (${words} words)</label>
+      <textarea id="examAnswer" class="inp" rows="12" lang="da" spellcheck="false" ${pr.checking ? "disabled" : ""}>${esc(pr.answer || "")}</textarea>
+      <div class="row wrap"><button class="btn primary ai" id="examCheck" ${pr.checking ? "disabled" : ""}>${pr.checking ? "Reading your answer..." : "Get feedback"}</button>
+      <button class="btn" data-pr="exam-new">New task</button>${fb ? '<button class="btn" id="examSave">Save as note</button>' : ""}</div>
+      ${pr.checkError ? `<p class="note-msg bad">${esc(pr.checkError)}</p>` : ""}
+      ${fb ? `<section class="pr-card fb"><h3>Feedback</h3>
+        <p><b>${esc(fb.verdict || "")}</b>${fb.score != null ? ` · about ${esc(fb.score)} / 100` : ""}</p>
+        ${fb.summaryDa ? `<p lang="da"><span class="lang">DA</span>${esc(fb.summaryDa)}</p>` : ""}${fb.summary ? `<p><span class="lang">EN</span>${esc(fb.summary)}</p>` : ""}
+        ${Array.isArray(fb.strengths) && fb.strengths.length ? `<h4>Good</h4><ul>${fb.strengths.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+        ${Array.isArray(fb.fixes) && fb.fixes.length ? `<h4>To improve</h4><ul>${fb.fixes.map((f) => `<li><del lang="da">${esc(f.original || "")}</del> → <ins lang="da">${esc(f.better || "")}</ins><br><span class="note-msg">${esc(f.why || "")}</span></li>`).join("")}</ul>` : ""}
+        ${fb.improved ? `<details><summary>A corrected version of your text</summary><p lang="da" class="task">${esc(fb.improved)}</p></details>` : ""}
+        <p class="note-msg">This is the AI's estimate, not an official grade.</p></section>` : ""}
+    </div>`;
+  }
+  prBody.addEventListener("input", (e) => { if (e.target.id === "examAnswer") { pr.answer = e.target.value; const l = prBody.querySelector('label[for="examAnswer"]'); if (l) l.textContent = `Your answer (${pr.answer.trim().split(/\s+/).filter(Boolean).length} words)`; } });
+  prBody.addEventListener("click", async (e) => {
+    if (pr.view !== "exam") return;
+    if (e.target.closest('[data-pr="exam-new"]')) { startExam(pr.exam.id); return; }
+    if (e.target.closest("#examSave")) {
+      const t = pr.task, fb = pr.feedback, id = newId(), now = Date.now();
+      const li = (a) => (Array.isArray(a) ? a : []).map((x) => `<li>${esc(typeof x === "string" ? x : `${x.original} → ${x.better}: ${x.why}`)}</li>`).join("");
+      const html = `<h2>${esc(t.title || "Exam practice")}</h2><p><em>${esc(pr.exam.name)}</em></p><p>${esc(t.task || "")}</p><h3>Mit svar</h3><p>${esc(pr.answer).replace(/\n/g, "<br>")}</p><h3>Feedback</h3><p><b>${esc(fb.verdict || "")}</b></p><p>${esc(fb.summaryDa || "")}</p><p>${esc(fb.summary || "")}</p><ul>${li(fb.strengths)}${li(fb.fixes)}</ul>${fb.improved ? `<h3>Rettet version</h3><p>${esc(fb.improved)}</p>` : ""}`;
+      await store.saveNote(id, { title: "Exam: " + (t.title || pr.exam.name), html, createdAt: now, updatedAt: now });
+      e.target.closest("#examSave").textContent = "Saved to Notes"; e.target.closest("#examSave").disabled = true;
+      return;
+    }
+    if (!e.target.closest("#examCheck")) return;
+    if (pr.answer.trim().split(/\s+/).length < 10) { pr.checkError = "Write a bit more first."; renderPractice(); return; }
+    pr.checking = true; pr.checkError = null; renderPractice();
+    try {
+      pr.feedback = await sample.json(
+        `You are an experienced examiner for the Danish exam "${pr.exam.name}" (level ${pr.exam.level}). Mark this written answer the way that exam assesses written work: task completion and content, text type and register, vocabulary, grammar and spelling, and coherence. Be honest and encouraging.\n` +
+        `TASK:\n${pr.task.task}\n\nANSWER:\n${pr.answer.slice(0, 6000)}\n\n` +
+        `Reply with only JSON: {"verdict": "Likely to pass" or "Not quite at the pass level yet", "score": a number 0-100, "summary": "2 to 3 sentences in English", "summaryDa": "the same in simple Danish", "strengths": ["short points in English"], "fixes": [{"original": "words from the answer", "better": "corrected Danish", "why": "short English reason"}], "improved": "the whole answer corrected, keeping the learner's ideas"}. At most 8 fixes. Don't use em dashes.`,
+        { maxTokens: 5000, cache: false }
+      );
+      addXp(10, "exams");
+    } catch (er) { pr.checkError = errCopy(er); }
+    pr.checking = false; renderPractice();
+  });
+
   // ---------- Profile window ----------
   function renderProfileBtn() { const b = $("#profileBtn"); b.textContent = profileName(curProfile()); b.title = "Profile: " + profileName(curProfile()) + ". Click to switch."; }
   function renderProfiles() {
@@ -2443,7 +2920,7 @@ button { cursor: pointer; }
       } catch {}
     }
     store.watchNotes(onNotes);
-    store.watchVocab((list) => { vocab = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); renderVocab(); });
+    store.watchVocab((list) => { vocab = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); renderVocab(); updatePracticeBtn(); if (pageMode === "practice" && pr.view === "hub") renderPractice(); });
     store.watchExercises(onExercises);
     if (getKey() && getModel()) aiOnFn(); else aiOff("Welcome! Open Settings and connect an AI service to turn on the tutor. Groq is free. Your notes work without it.");
     if (syncOn()) { syncNow(); refreshRemoteProfiles(); }
