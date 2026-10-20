@@ -232,6 +232,8 @@ button { cursor: pointer; }
 .ex-fb { grid-column: 2; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .ex-fb:empty { display: none; }
 .ex-fb .why { color: var(--muted); flex-basis: 100%; }
+.ex-fb .answer { flex-basis: 100%; font-size: 15px; }
+.ex-fb .answer b { color: var(--ok); }
 .ok-t { color: var(--ok); font-weight: 600; }
 .bad-t { color: var(--accent); font-weight: 600; }
 .blank { font: inherit; font-size: 16px; border: 0; border-bottom: 2px solid var(--sea); background: var(--sea-soft); color: var(--ink); border-radius: 4px 4px 0 0; padding: 0 .3em; margin: 0 .15em; text-align: center; max-width: 100%; }
@@ -1376,10 +1378,11 @@ button { cursor: pointer; }
       const r = itemResult(ex, i);
       if (r === true) fb += '<span class="ok-t">✓ Rigtigt!</span>';
       else if (r === false) fb += '<span class="bad-t">Not quite.</span>';
-      else fb += `<span class="note-msg">Compare with the answer: <b>${esc(it.correct || (it.answers || []).map((a) => a[0]).join(", "))}</b></span>`;
-      if (it.why && r !== true) fb += `<span class="why">${esc(it.why)}</span>`;
+      // The answer is shown underneath; your own words stay where you put them
+      if (st.shown[i] || r === null) fb += `<span class="answer">Answer: ${answerHtml(ex, it)}</span>`;
+      if (it.why && (r !== true || st.shown[i])) fb += `<span class="why">${esc(it.why)}</span>`;
     }
-    fb += `<button class="btn small" type="button" data-act="show" data-i="${i}">Show answer</button>`;
+    fb += `<button class="btn small" type="button" data-act="show" data-i="${i}">${st.shown[i] ? "Hide answer" : "Show answer"}</button>`;
     fb += `<button class="btn small ai" type="button" data-act="ask" data-i="${i}"${aiOn ? "" : " disabled"}>Ask tutor</button>`;
     return fb;
   }
@@ -1456,14 +1459,24 @@ button { cursor: pointer; }
   }
   const overItem = (item, x, y) => { const r = item.getBoundingClientRect(); return x > r.left - 30 && x < r.right + 30 && y > r.top - 20 && y < r.bottom + 20; };
 
-  function showAnswer(i) {
-    const ex = currentEx, it = ex.items[i], st = ex.state;
-    if (ex.type === "place") {
-      if (it.auto) { st.pos[i] = it.chips.map((c) => c.answers[0]); st.moved[i] = it.chips.map(() => true); }
-    } else st.val[i] = it.answers.map((a) => a[0] || "");
-    st.shown[i] = true;
-    if (sel?.i === i) sel = null;
-    saveEx(); refreshItem(i); renderExList();
+  // The correct sentence, with the answer words in bold
+  function answerHtml(ex, it) {
+    if (ex.type === "place" && it.auto) {
+      const out = [];
+      for (let g = 0; g <= it.tokens.length; g++) {
+        it.chips.forEach((c) => { if (c.answers[0] === g) out.push({ t: c.word, b: true }); });
+        if (g < it.tokens.length) out.push({ t: it.tokens[g], b: false });
+      }
+      return out.map((o, k) => (k === 0 || noSpaceBefore(o.t) ? "" : " ") + (o.b ? `<b>${esc(o.t)}</b>` : esc(o.t))).join("");
+    }
+    if (ex.type === "fill" && it.answers.length && it.answers.every((a) => a.length))
+      return it.parts.map((p, b) => esc(p) + (b < it.answers.length ? `<b>${esc(it.answers[b][0])}</b>` : "")).join("");
+    return esc(it.correct || "(no answer given)");
+  }
+  function showAnswer(i, on) {
+    const st = currentEx.state;
+    st.shown[i] = on ?? !st.shown[i];
+    saveEx(); refreshItem(i);
   }
   function askAboutItem(i) {
     const ex = currentEx, it = ex.items[i], r = itemResult(ex, i), showing = ex.state.checked || ex.state.shown[i];
@@ -1567,7 +1580,7 @@ button { cursor: pointer; }
   });
 
   $("#exCheck").onclick = () => { if (!currentEx) return; currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
-  $("#exShowAll").onclick = () => { if (!currentEx) return; currentEx.items.forEach((_, i) => showAnswer(i)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
+  $("#exShowAll").onclick = () => { if (!currentEx) return; currentEx.items.forEach((_, i) => (currentEx.state.shown[i] = true)); currentEx.state.checked = true; saveEx(true); renderExercise(); renderExList(); };
   $("#exReset").onclick = () => { if (!currentEx) return; currentEx.state = freshState(currentEx); sel = null; saveEx(true); renderExercise(); renderExList(); };
   $("#exTitle").addEventListener("input", () => { if (!currentEx) return; currentEx.title = $("#exTitle").value; saveEx(); clearTimeout(exListT); exListT = setTimeout(renderExList, 500); });
   let exListT = null;
@@ -1596,10 +1609,10 @@ button { cursor: pointer; }
     `- "alternatives": other fully correct versions, only if a word can really go in more than one place. Otherwise [].\n` +
     `- Use correct Danish word order: in a main clause, a central adverb (ikke, aldrig, altid, også, tit, gerne, nok, faktisk, virkelig...) goes right after the finite verb, or after the subject when the subject comes after the verb. In a subordinate clause (at, fordi, når, hvis, selvom, der, som, hvorfor...), it goes before the finite verb.\n` +
     `For "fill" items:\n- "given": the sentence with each blank written as ___ (three underscores). Keep any hint in parentheses after the blank.\n- "answers": for each blank in order, a list of accepted answers.\n- "correct": the full sentence with the blanks filled in.\n` +
-    `For both: "why": one or two short sentences in English explaining the rule for this item.\n` +
+    `"why" (both types), written BEFORE "correct": in short English, work out the rule. For a "place" item, for each word in parentheses say which clause it belongs to (main or subordinate), what that clause's finite verb is, whether the subject comes after the verb (inversion), and so where the word goes. For a "fill" item, explain the form in one sentence. Then write "correct" so it follows exactly what "why" says.\n` +
     `"wordBank": the words to choose from if the exercise gives a list, otherwise [].\n` +
     `"instructions": the exercise instructions in the original language, then a short English translation in parentheses.\n` +
-    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "correct": "...", "alternatives": [], "answers": [["..."]], "why": "..."}]}. Don't use em dashes.`;
+    `Reply with only JSON: {"title": "short title", "type": "place" | "fill", "instructions": "...", "wordBank": [], "items": [{"given": "...", "why": "...", "correct": "...", "alternatives": [], "answers": [["..."]]}]}. Don't use em dashes.`;
 
   async function saveNewExercise(raw, fallbackTitle, msgEl) {
     const ex = buildExercise(raw, fallbackTitle);
