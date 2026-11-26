@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-26 (7)
+- Added: paste a picture with Ctrl+V instead of uploading it. On an open note it makes a lesson note from the picture. On the New exercise page it makes an exercise from it. Pasting text works as before.
+
 ## 2026-11-26 (6)
 - Changed: "Add from file" (photos, PDFs, Word, PowerPoint, text) now writes a lesson plan as well. The note starts with a short summary and a numbered study plan with minutes per step, then a section explaining every concept, rule or table in the material (what it is, the rule, Danish examples with translations, exceptions and common mistakes), then words and practice exercises.
 

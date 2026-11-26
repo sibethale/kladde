@@ -573,7 +573,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       <div class="page-body">
         <div class="card">
           <div class="card-head"><h3>From your class</h3></div>
-          <label for="exPaste" class="note-msg">Paste the exercise here, including the instructions. Or upload a photo, PDF, Word or PowerPoint file of it. It works for "put the word in the right place" and "fill in the blank" exercises.</label>
+          <label for="exPaste" class="note-msg">Paste the exercise here, including the instructions. Or upload a photo, PDF, Word or PowerPoint file of it, or paste a picture here with Ctrl+V. It works for "put the word in the right place" and "fill in the blank" exercises.</label>
           <textarea id="exPaste" rows="9" placeholder="Skriv adverbierne det rigtige sted i sætningerne.&#10;1. Jeg ved det (ikke).&#10;2. Han kommer for sent (altid)."></textarea>
           <label for="exMakeNote" class="note-msg">Optional: tell the AI what to do differently (for example "Keep the blanks in the order of the sentence" or "Add a word bank").</label>
           <input id="exMakeNote" class="inp" placeholder="Extra instructions for the AI (optional)">
@@ -626,7 +626,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
             <div class="note-msg" id="genMsg"></div>
             <div class="drop" id="dropZone">
               <p><b>Or build it from your class material.</b> Upload a PDF, PowerPoint, Word file, photo of a worksheet or a text file. The AI reads it and turns it into a lesson note. If you typed a topic above, it will focus on that.</p>
-              <div class="row"><button class="btn sea ai" id="btnUpload" type="button">Upload a file</button><span class="note-msg">or drop it here · up to 10 MB</span></div>
+              <div class="row"><button class="btn sea ai" id="btnUpload" type="button">Upload a file</button><span class="note-msg">or drop it here, or paste a picture with Ctrl+V · up to 10 MB</span></div>
             </div>
           </div>
         </div>
@@ -2384,15 +2384,24 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     makeExercise(t);
   };
   $("#exUpload").onclick = () => $("#exFile").click();
-  $("#exFile").onchange = async (e) => {
-    const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+  async function exFromFile(f) {
+    if (!f) return;
     const msg = $("#exMsg");
     try {
       msg.className = "note-msg"; msg.textContent = "Reading the file...";
       const got = await readFile(f);
       await makeExercise(got.text, got.attachments, f.name.replace(/\.[^.]+$/, ""));
     } catch (err) { msg.className = "note-msg bad"; msg.textContent = err?.msg || "Couldn't read that file. Try a PDF or a photo instead."; }
-  };
+  }
+  $("#exFile").onchange = (e) => { const f = e.target.files?.[0]; e.target.value = ""; exFromFile(f); };
+  // Paste a picture (a screenshot, or a copied image) instead of uploading a file
+  document.addEventListener("paste", (e) => {
+    const img = [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith("image/"));
+    if (!img || (e.clipboardData.getData("text/plain") || "").trim()) return; // text pastes work as before
+    const file = new File([img], "Pasted picture.png", { type: img.type });
+    if (pageMode === "note") { e.preventDefault(); lessonFromFile(file); }
+    else if (pageMode === "newEx") { e.preventDefault(); exFromFile(file); }
+  });
   $("#exGen").onclick = async () => {
     const msg = $("#exGenMsg"), topic = $("#exTopic").value.trim(), kind = $("#exKind").value;
     const useNote = $("#exFromNote").checked && lastNoteId;
