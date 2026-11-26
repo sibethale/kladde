@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-26 (4)
+- Fixed: in fill-in-the-blank exercises, a blank the AI left without an accepted answer could not be checked ("can't be checked automatically"). Now the app works the missing answer out from the full correct sentence, so those blanks turn green or red and the answer shows in bold.
+
 ## 2026-11-26 (3)
 - Fixed: in fill-in-the-blank exercises, after pressing Show answer or Check answer, editing a box and then pressing a button (Check answer, Hide answer) sometimes did nothing. The sentence was redrawn as you left the box, which swallowed the click. Now only the colours and message update and the buttons stay put.
 

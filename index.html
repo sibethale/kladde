@@ -1890,7 +1890,20 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     }
     return res;
   }
-  const gradeFill = (it, vals) => it.answers.map((a, b) => (a.length ? a.some((x) => normAns(x) === normAns(vals[b])) : null));
+  // If the AI left a blank with no accepted answers, work them out from the full correct sentence
+  function effAnswers(it) {
+    if (!it.correct || it.answers.every((a) => a.length)) return it.answers;
+    try {
+      const flat = (t) => String(t).replace(/\s+/g, " ").trim();
+      const rx = (t) => flat(t.replace(/\s*\([^)]*\)/g, "")).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const parts = it.parts.map((p, k) => (k === 0 ? p.replace(/^\s+/, "") : p));
+      const body = parts.map((p, k) => { const t = rx(p); return (k > 0 && /^\s/.test(p) ? " " : "") + t + (k < parts.length - 1 && /\s$/.test(p) ? " " : ""); });
+      const m = new RegExp("^" + body.map((b) => b.replace(/^ +| +$/g, (x) => x)).join("(.+?)") + "$").exec(flat(it.correct));
+      if (!m) return it.answers;
+      return it.answers.map((a, b) => (a.length ? a : m[b + 1] ? [m[b + 1].trim()] : []));
+    } catch { return it.answers; }
+  }
+  const gradeFill = (it, vals) => effAnswers(it).map((a, b) => (a.length ? a.some((x) => normAns(x) === normAns(vals[b])) : null));
   // true / false, or null when it can't be checked automatically
   function itemResult(ex, i) {
     const it = ex.items[i], st = ex.state;
@@ -2112,8 +2125,9 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       }
       return out.map((o, k) => (k === 0 || noSpaceBefore(o.t) ? "" : " ") + (o.b ? `<b>${esc(o.t)}</b>` : esc(o.t))).join("");
     }
-    if (ex.type === "fill" && it.answers.length && it.answers.every((a) => a.length))
-      return it.parts.map((p, b) => esc(p) + (b < it.answers.length ? `<b>${esc(it.answers[b][0])}</b>` : "")).join("");
+    const ea = ex.type === "fill" ? effAnswers(it) : [];
+    if (ex.type === "fill" && ea.length && ea.every((a) => a.length))
+      return it.parts.map((p, b) => esc(p) + (b < ea.length ? `<b>${esc(ea[b][0])}</b>` : "")).join("");
     return esc(it.correct || "(no answer given)");
   }
   function showAnswer(i, on) {
