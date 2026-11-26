@@ -111,6 +111,15 @@ button { cursor: pointer; }
 .list { overflow-y: auto; flex: 1; padding: 6px; }
 .note-item { width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; }
 .note-item:hover { background: var(--paper); }
+.cat-head { display: flex; align-items: center; gap: 2px; margin-top: 8px; border-radius: 8px; }
+.cat-head.over { background: var(--accent-soft); outline: 2px dashed var(--accent); }
+.cat-toggle { flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; padding: 6px 8px; display: flex; gap: 6px; align-items: baseline; font: inherit; color: var(--muted); cursor: pointer; }
+.cat-toggle b { font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-toggle small { font-size: 12px; }
+.cat-edit { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 4px 8px; font-size: 14px; border-radius: 6px; }
+.cat-edit:hover { background: var(--paper); color: var(--ink); }
+.cat-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.cat-row .inp { max-width: 260px; width: auto; flex: 1; }
 .note-item[aria-current="true"] { background: var(--accent-soft); }
 .note-item b { font-family: var(--f-display); font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note-item small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -592,6 +601,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     <div id="hasNote" hidden style="display:contents">
       <div class="page-head">
         <div class="title-row"><input class="title-in" id="title" aria-label="Note title" placeholder="Untitled note"><button class="pencil" id="renameNote" type="button" title="Rename this note" aria-label="Rename this note">✎</button></div>
+        <div class="cat-row"><label class="note-msg" for="noteCat">Category</label><input id="noteCat" class="inp" list="catList" maxlength="40" placeholder="None. Type a name to make a new one" autocomplete="off"><datalist id="catList"></datalist></div>
         <div class="actions">
           <button class="btn ai" id="btnGrammar">Grammar check</button>
           <button class="btn ai" id="btnTranslate">Translate</button>
@@ -1104,17 +1114,81 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
   function plain(html) { const d = document.createElement("div"); d.innerHTML = html || ""; return d.textContent.replace(/\s+/g, " ").trim(); }
   function fmtDate(t) { if (!t) return ""; return new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short" }); }
 
+  // Categories: each note can have a category name. The list of categories is whatever names the notes use.
+  const catClosed = new Set();
+  try { JSON.parse(localStorage.getItem("kladde:catClosed") || "[]").forEach((c) => catClosed.add(c)); } catch {}
+  const saveCatClosed = () => { try { localStorage.setItem("kladde:catClosed", JSON.stringify([...catClosed])); } catch {} };
+  const catOf = (n) => String(n.category || "").trim();
+  const allCats = () => [...new Set(notes.map(catOf).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  // Tidy a typed name, and reuse the spelling of an existing category with the same name
+  function normCat(raw, except) {
+    const cat = String(raw || "").replace(/\s+/g, " ").trim().slice(0, 40);
+    const same = allCats().find((c) => c !== except && c.toLowerCase() === cat.toLowerCase());
+    return same || cat;
+  }
+  async function putCategory(n, cat) {
+    n.category = cat;
+    if (n.id === currentId && dirty) { await flushSave(); return; } // saves the open note, category included
+    const { id: _id, ...data } = n;
+    await store.saveNote(n.id, data);
+  }
+  async function setCategory(id, raw) {
+    const n = notes.find((x) => x.id === id); if (!n) return;
+    const cat = normCat(raw);
+    if (id === currentId) $("#noteCat").value = cat;
+    if (catOf(n) === cat) return;
+    try { await putCategory(n, cat); setStatus("Saved", "ok"); } catch { setStatus("Couldn't save", "bad"); }
+    renderNoteList();
+  }
+  async function renameCategory(cat) {
+    const next = prompt(`Rename the category "${cat}".\nLeave it empty to remove the category. Its notes will then have no category.`, cat);
+    if (next === null) return;
+    const to = normCat(next, cat);
+    if (to === cat) return;
+    const moving = notes.filter((n) => catOf(n) === cat);
+    if (!moving.length) return;
+    try { for (const n of moving) await putCategory(n, to); setStatus("Saved", "ok"); } catch { setStatus("Couldn't save", "bad"); }
+    if (currentId) $("#noteCat").value = catOf(notes.find((x) => x.id === currentId) || {});
+    renderNoteList();
+  }
+  $("#noteCat").addEventListener("change", () => { if (currentId) setCategory(currentId, $("#noteCat").value); });
+  $("#noteCat").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#noteCat").blur(); } });
+
   function renderNoteList() {
     const q = $("#search").value.trim().toLowerCase();
     const list = $("#noteList");
-    const shown = notes.filter((n) => !q || (n.title + " " + plain(n.html)).toLowerCase().includes(q));
+    $("#catList").innerHTML = allCats().map((c) => `<option value="${esc(c)}">`).join("");
+    const shown = notes.filter((n) => !q || (n.title + " " + catOf(n) + " " + plain(n.html)).toLowerCase().includes(q));
     if (!notes.length) { list.innerHTML = '<div class="empty">No notes yet. Press <b>+ New</b> to start your first one.</div>'; return; }
     if (!shown.length) { list.innerHTML = '<div class="empty">No notes match that search.</div>'; return; }
-    list.innerHTML = shown.map((n) => {
+    const noteBtn = (n) => {
       const preview = plain(n.html).slice(0, 80) || "Empty note";
-      return `<button class="note-item" data-id="${esc(n.id)}" aria-current="${pageMode === "note" && n.id === currentId}"><b>${esc(n.title || "Untitled note")}</b><small>${esc(fmtDate(n.updatedAt))} · ${esc(preview)}</small></button>`;
-    }).join("");
-    list.querySelectorAll(".note-item").forEach((b) => (b.onclick = () => { openNote(b.dataset.id); setView("page"); }));
+      return `<button class="note-item" draggable="true" data-id="${esc(n.id)}" aria-current="${pageMode === "note" && n.id === currentId}"><b>${esc(n.title || "Untitled note")}</b><small>${esc(fmtDate(n.updatedAt))} · ${esc(preview)}</small></button>`;
+    };
+    const cats = allCats();
+    if (!cats.length) { list.innerHTML = shown.map(noteBtn).join(""); }
+    else {
+      const groups = cats.map((c) => ({ cat: c, items: shown.filter((n) => catOf(n) === c) }));
+      groups.push({ cat: "", items: shown.filter((n) => !catOf(n)) });
+      list.innerHTML = groups.filter((g) => g.items.length).map((g) => {
+        const open = !!q || !catClosed.has("c:" + g.cat);
+        return `<div class="cat-head" data-cat="${esc(g.cat)}"><button class="cat-toggle" type="button" data-cat="${esc(g.cat)}" aria-expanded="${open}"><span>${open ? "▾" : "▸"}</span><b>${esc(g.cat || "No category")}</b><small>${g.items.length}</small></button>` +
+          (g.cat ? `<button class="cat-edit" type="button" data-cat="${esc(g.cat)}" title="Rename or remove this category" aria-label="Rename or remove category ${esc(g.cat)}">✎</button>` : "") + `</div>` +
+          (open ? g.items.map(noteBtn).join("") : "");
+      }).join("");
+      list.querySelectorAll(".cat-toggle").forEach((b) => (b.onclick = () => { const k = "c:" + b.dataset.cat; catClosed.has(k) ? catClosed.delete(k) : catClosed.add(k); saveCatClosed(); renderNoteList(); }));
+      list.querySelectorAll(".cat-edit").forEach((b) => (b.onclick = () => renameCategory(b.dataset.cat)));
+      // Drag a note onto a category title to move it there
+      list.querySelectorAll(".cat-head").forEach((h) => {
+        h.ondragover = (e) => { e.preventDefault(); h.classList.add("over"); };
+        h.ondragleave = () => h.classList.remove("over");
+        h.ondrop = (e) => { e.preventDefault(); h.classList.remove("over"); const id = e.dataTransfer.getData("text/plain"); if (id) setCategory(id, h.dataset.cat); };
+      });
+    }
+    list.querySelectorAll(".note-item").forEach((b) => {
+      b.onclick = () => { openNote(b.dataset.id); setView("page"); };
+      b.ondragstart = (e) => { e.dataTransfer.setData("text/plain", b.dataset.id); e.dataTransfer.effectAllowed = "move"; };
+    });
   }
 
   // Vocab bank: grouped by the lesson note each word came from, with search
@@ -1169,6 +1243,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     // Another tab or device changed this note: update it unless you're mid-edit.
     if (!dirty && !saving && document.activeElement !== editor && n.html !== editor.innerHTML) { editor.innerHTML = n.html || ""; updateGenCard(); }
     if (!dirty && !saving && document.activeElement !== titleIn && n.title !== titleIn.value) titleIn.value = n.title || "";
+    if (document.activeElement !== $("#noteCat") && catOf(n) !== $("#noteCat").value.trim()) $("#noteCat").value = catOf(n);
   }
 
   async function openNote(id) {
@@ -1177,6 +1252,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     currentId = id;
     const n = notes.find((x) => x.id === id);
     titleIn.value = n?.title || "";
+    $("#noteCat").value = n?.category || "";
     editor.innerHTML = n?.html || "";
     $("#results").innerHTML = "";
     resetDelete();
@@ -1219,7 +1295,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     if (saving) { saveTimer = setTimeout(flushSave, 400); return; }
     saving = true; dirty = false;
     const id = currentId, n = notes.find((x) => x.id === id);
-    const data = { title: titleIn.value.trim() || "Untitled note", html: editor.innerHTML, createdAt: n?.createdAt || Date.now(), updatedAt: Date.now() };
+    const data = { title: titleIn.value.trim() || "Untitled note", html: editor.innerHTML, createdAt: n?.createdAt || Date.now(), updatedAt: Date.now(), category: n?.category || "" };
     if (n) Object.assign(n, data);
     setStatus("Saving...");
     try {
