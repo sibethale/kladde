@@ -544,9 +544,16 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
           <button class="btn" id="exShowAll">Show all answers</button>
           <button class="btn" id="exReset">Start again</button>
           <button class="btn ai" id="exFix" title="Work out the answers again using the Danish word-order rules">Fix answer key</button>
+          <button class="btn ai" id="exEdit" title="Tell the AI what to change in this exercise">Edit with AI</button>
           <span class="score" id="exScore" aria-live="polite"></span>
           <span class="spacer"></span>
           <span id="exDelWrap"></span>
+        </div>
+        <div id="exEditBox" class="card" hidden style="margin-top:10px">
+          <label for="exEditText" class="note-msg">Tell the AI what to change. For example: "Make it 12 sentences", "Use easier words", "Fix sentence 3, the answer should be ...", or "Make it a fill in the blanks exercise". Your answers so far will be cleared.</label>
+          <textarea id="exEditText" rows="3" placeholder="What should the AI change?"></textarea>
+          <div class="row wrap"><button class="btn primary ai" id="exEditGo">Apply changes</button><button class="btn" id="exEditCancel" type="button">Cancel</button></div>
+          <p class="note-msg" id="exEditMsg"></p>
         </div>
       </div>
       <div class="page-body" id="exBody"></div>
@@ -559,6 +566,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
           <div class="card-head"><h3>From your class</h3></div>
           <label for="exPaste" class="note-msg">Paste the exercise here, including the instructions. Or upload a photo, PDF, Word or PowerPoint file of it. It works for "put the word in the right place" and "fill in the blank" exercises.</label>
           <textarea id="exPaste" rows="9" placeholder="Skriv adverbierne det rigtige sted i sætningerne.&#10;1. Jeg ved det (ikke).&#10;2. Han kommer for sent (altid)."></textarea>
+          <label for="exMakeNote" class="note-msg">Optional: tell the AI what to do differently (for example "Keep the blanks in the order of the sentence" or "Add a word bank").</label>
+          <input id="exMakeNote" class="inp" placeholder="Extra instructions for the AI (optional)">
           <div class="row wrap"><button class="btn primary ai" id="exMake">Make it interactive</button><button class="btn sea ai" id="exUpload" type="button">Upload a file</button></div>
           <p class="note-msg" id="exMsg"></p>
         </div>
@@ -568,6 +577,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
             <select id="exKind" class="sel" aria-label="Exercise type"><option value="place">Put the word in the right place</option><option value="fill">Fill in the blanks</option></select>
             <input id="exTopic" class="inp" placeholder="Topic, e.g. ikke, aldrig and altid">
           </div>
+          <div class="row wrap"><input id="exGenNote" class="inp" placeholder="Extra instructions for the AI (optional), e.g. 12 sentences, easier words"></div>
           <div class="row wrap"><button class="btn ai" id="exGen">Write exercise</button><label class="note-msg chk" for="exFromNote"><input type="checkbox" id="exFromNote"> Use my last open note</label></div>
           <p class="note-msg" id="exGenMsg"></p>
         </div>
@@ -1882,6 +1892,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     const ex = exercises.find((e) => e.id === id); if (!ex) return;
     if (!ex.state) ex.state = freshState(ex);
     currentEx = ex; pageMode = "exercise"; sel = null;
+    $("#exEditBox").hidden = true; $("#exEditMsg").textContent = "";
     resetExDelete(); renderPage(); renderExercise(); renderExList(); renderNoteList(); renderChat();
     $("#exBody").scrollTop = 0;
     setView("page");
@@ -2139,6 +2150,45 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       setStatus(n ? "Answer key fixed" : "Couldn't check this one", n ? "ok" : "bad");
     } finally { btn.textContent = "Fix answer key"; if (aiOn) btn.disabled = false; }
   };
+  // Edit with AI: send the current exercise plus the learner's change request, and rebuild it from the reply
+  $("#exEdit").onclick = () => {
+    if (!aiOn) { openSettings(); return; }
+    const box = $("#exEditBox"); box.hidden = !box.hidden;
+    if (!box.hidden) $("#exEditText").focus();
+  };
+  $("#exEditCancel").onclick = () => { $("#exEditBox").hidden = true; $("#exEditMsg").textContent = ""; };
+  $("#exEditGo").onclick = async () => {
+    const ex = currentEx, msg = $("#exEditMsg"), ask = $("#exEditText").value.trim();
+    if (!ex) return;
+    if (!aiOn) { openSettings(); return; }
+    if (!ask) { msg.className = "note-msg bad"; msg.textContent = "Write what you want the AI to change first."; return; }
+    const current = {
+      title: ex.title, type: ex.type, instructions: ex.instructions || "", wordBank: ex.wordBank || [],
+      items: ex.items.map((it) => ({ given: it.given, correct: it.correct || "", alternatives: it.alternatives || [], answers: it.answers || [], why: it.why || "", whyDa: it.whyDa || "" })),
+    };
+    msg.className = "note-msg"; msg.textContent = "Changing the exercise. This can take a minute...";
+    $("#exEditGo").disabled = true;
+    try {
+      const raw = await sample.json(
+        `Here is a Danish exercise for a learner at CEFR level ${level()}, as JSON:\n<exercise>\n${JSON.stringify(current)}\n</exercise>\n\n` +
+        `CHANGES REQUESTED BY THE LEARNER (do exactly this, and keep everything else the same unless the change needs it):\n${ask}\n\n` +
+        `Reply with the complete updated exercise in this format.\n${EX_FORMAT}`,
+        { maxTokens: 6000 }
+      );
+      const next = buildExercise(raw, ex.title);
+      if (!next.items.length) throw { msg: "The AI's answer had no sentences in it. Try again, or say the change in a different way." };
+      if (next.type === "place" && provider() !== "claude") { msg.textContent = "Checking the answers with the Danish word-order rules..."; await ensureRules(next, true); }
+      Object.assign(ex, next); // keeps the same id and created date
+      ex.updatedAt = Date.now(); sel = null;
+      await store.saveExercise(ex.id, ex);
+      $("#exEditText").value = ""; $("#exEditBox").hidden = true; msg.textContent = "";
+      if (currentEx?.id === ex.id) { currentEx = ex; renderExercise(); }
+      renderExList(); setStatus("Exercise updated", "ok");
+    } catch (e) {
+      msg.className = "note-msg bad";
+      msg.textContent = e?.msg || (e?.code ? errCopy(e) : "") || "Something went wrong. Try again.";
+    } finally { if (aiOn) $("#exEditGo").disabled = false; }
+  };
   $("#exReset").onclick = () => { if (!currentEx) return; currentEx.state = freshState(currentEx); sel = null; saveEx(true); renderExercise(); renderExList(); };
   $("#exTitle").addEventListener("input", () => { if (!currentEx) return; currentEx.title = $("#exTitle").value; saveEx(); clearTimeout(exListT); exListT = setTimeout(renderExList, 500); });
   let exListT = null;
@@ -2192,6 +2242,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     try {
       const raw = await sample.json(
         `Turn this Danish language exercise into an interactive exercise for a learner at CEFR level ${level()}.\n${EX_FORMAT}` +
+        ($("#exMakeNote").value.trim() ? `\n\nEXTRA INSTRUCTIONS FROM THE LEARNER (follow these):\n${$("#exMakeNote").value.trim()}` : "") +
         (text ? `\n\nEXERCISE:\n${String(text).slice(0, Math.max(P().budget, 8000))}` : "\n\nThe exercise is in the attached file."),
         { attachments, maxTokens: 6000 }
       );
@@ -2230,7 +2281,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       const raw = await sample.json(
         `Write a new Danish exercise for a learner at CEFR level ${level()}. The type must be "${kind}". Write 8 items, each a natural, everyday Danish sentence.` +
         (kind === "place" ? ` Put each word to place in parentheses right after the clause it belongs to, the way textbooks do.` : "") +
-        (topic ? `\nTopic: ${topic}` : "") + (n ? `\nBase it on this lesson note:\n<note>\n${noteBody}\n</note>` : "") +
+        (topic ? `\nTopic: ${topic}` : "") + ($("#exGenNote").value.trim() ? `\nEXTRA INSTRUCTIONS FROM THE LEARNER (follow these): ${$("#exGenNote").value.trim()}` : "") + (n ? `\nBase it on this lesson note:\n<note>\n${noteBody}\n</note>` : "") +
         `\nThe instructions should be in Danish, with an English translation.\n${EX_FORMAT}`,
         { maxTokens: 6000 }
       );
