@@ -1988,7 +1988,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
     return `<button type="button" class="${cls}" data-i="${i}" data-c="${k}" aria-label="${esc(c.word)}. Drag it, or use the arrow keys to move it.">${moved ? esc(c.word) : "(" + esc(c.word) + ")"}</button>`;
   }
   const isChecked = (st, i) => st.checked || !!st.itemChecked?.[i];
-  function feedbackHtml(ex, i) {
+  // The message part of a sentence's feedback (kept apart from the buttons so it can be redrawn without replacing them)
+  function feedbackMsg(ex, i) {
     const it = ex.items[i], st = ex.state, checked = isChecked(st, i), showing = checked || st.shown[i];
     let fb = "";
     if (showing) {
@@ -2002,6 +2003,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       // Your own words stay where you put them; the answer goes underneath
       if (st.shown[i]) fb += `<span class="answer">Answer: ${answerHtml(ex, it)}</span>`;
     }
+    return fb;
+  }
+  function feedbackHtml(ex, i) {
+    const st = ex.state;
+    let fb = `<span class="fbm" style="display:contents">${feedbackMsg(ex, i)}</span>`;
     fb += `<button class="btn small sea" type="button" data-act="check" data-i="${i}">Check answer</button>`;
     fb += `<button class="btn small" type="button" data-act="show" data-i="${i}">${st.shown[i] ? "Hide answer" : "Show answer"}</button>`;
     fb += `<button class="btn small ai" type="button" data-act="ask" data-i="${i}"${aiOn ? "" : " disabled"}>Ask tutor</button>`;
@@ -2061,6 +2067,21 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
   function refreshItem(i) {
     const old = $("#exBody").querySelector(`.ex-item[data-i="${i}"]`);
     if (old) old.outerHTML = itemHtml(currentEx, i);
+    updateScore();
+  }
+  // Updates the colours and message of one sentence WITHOUT replacing its buttons.
+  // (Replacing them while you click makes the click get lost.)
+  function softRefreshItem(i) {
+    const ex = currentEx, old = $("#exBody").querySelector(`.ex-item[data-i="${i}"]`);
+    if (!ex || !old) return;
+    const showing = isChecked(ex.state, i) || ex.state.shown[i];
+    const grade = showing && ex.type === "fill" ? gradeFill(ex.items[i], ex.state.val[i]) : null;
+    old.querySelectorAll(".blank").forEach((inp) => {
+      const g = grade ? grade[+inp.dataset.b] : null;
+      inp.classList.remove("ok", "bad");
+      if (g === true) inp.classList.add("ok"); else if (g === false) inp.classList.add("bad");
+    });
+    const m = old.querySelector(".fbm"); if (m) m.innerHTML = feedbackMsg(ex, i);
     updateScore();
   }
   function focusChip(i, c) { $("#exBody").querySelector(`.chip-w[data-i="${i}"][data-c="${c}"]`)?.focus({ preventScroll: true }); }
@@ -2202,11 +2223,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
   exBody.addEventListener("change", (e) => {
     // When you leave a box after checking, re-check that sentence
     const inp = e.target.closest(".blank");
-    if (inp && (currentEx.state.checked || currentEx.state.shown[+inp.dataset.i])) {
-      const keep = document.activeElement?.id;
-      refreshItem(+inp.dataset.i);
-      if (keep) document.getElementById(keep)?.focus();
-    }
+    if (inp && (currentEx.state.checked || currentEx.state.shown[+inp.dataset.i])) softRefreshItem(+inp.dataset.i);
   });
 
   $("#exCheck").onclick = async () => { await waitForFix(); if (!currentEx) return;

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-26 (3)
+- Fixed: in fill-in-the-blank exercises, after pressing Show answer or Check answer, editing a box and then pressing a button (Check answer, Hide answer) sometimes did nothing. The sentence was redrawn as you left the box, which swallowed the click. Now only the colours and message update and the buttons stay put.
+
 ## 2026-11-26 (2)
 - Added: note categories. Each note has a **Category** box under its title. Type a new name to make a category, or pick an existing one.
 - Added: the note list is grouped by category. Click a category title to fold or unfold it, click the pencil to rename it (leave the name empty to remove it), or drag a note onto a category title to move it.
