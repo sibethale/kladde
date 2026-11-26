@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-26 (6)
+- Changed: "Add from file" (photos, PDFs, Word, PowerPoint, text) now writes a lesson plan as well. The note starts with a short summary and a numbered study plan with minutes per step, then a section explaining every concept, rule or table in the material (what it is, the rule, Danish examples with translations, exceptions and common mistakes), then words and practice exercises.
+
 ## 2026-11-26 (5)
 - Fixed: uploading a photo with Groq or OpenRouter ended in "Couldn't reach the AI service", because those AI services can't see photos. Now Kladde reads the Danish text out of the photo on your device (Tesseract OCR, loaded from the internet the first time) and sends only the text. With Claude, photos are still sent directly.
 - Changed: when the AI service reports a problem, the message now shows what it said instead of a wrong "check your connection" message.

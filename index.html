@@ -1650,8 +1650,12 @@ details summary { cursor: pointer; font-size: 13px; color: var(--sea); }
       const L = await sample.json(
         `This is material from a Danish class (file name: "${file.name}"). The learner is at CEFR level ${level()}.\n` +
         (focus ? `The learner wants to focus on: ${focus}\n` : "") +
-        `Analyse the material and write a lesson note the learner can study from. Explanations in English, examples in Danish with English translations. Include:\n` +
-        `- a short summary of what the material covers\n- the key grammar points, explained simply with examples\n- the important words and phrases\n- 3 to 5 practice exercises based on the material, with an answer key at the end\n` +
+        `Analyse the material and write a lesson note with a lesson plan that the learner can study from. Explanations in English, examples in Danish with English translations. Include, in this order:\n` +
+        `- a short summary of what the material covers\n` +
+        `- "Lesson plan": a numbered list (ol) of 4 to 6 study steps in a sensible order. Each step says what to learn, what to do (read, say aloud, write sentences...) and roughly how many minutes it takes.\n` +
+        `- one section for EVERY concept, rule or pattern in the material. Tables, boxes, charts, highlighted letters and example sentences each show a rule, so explain what each one shows even if the material doesn't explain it. Each section has an h3 with the concept's name, a simple explanation of what it is and when to use it, the rule itself, 3 to 5 Danish examples with English translations, and any exceptions or common mistakes. Go a little beyond the material where it helps the learner understand. Keep each section short and clear, and keep the whole note under about 1500 words.\n` +
+        `- the important words and phrases\n- 3 to 5 practice exercises based on the material, with an answer key at the end\n` +
+        `If the material was read from a photo or table and the text looks jumbled, work out what the table or layout most likely showed.\n` +
         `Use **bold** for key Danish words. Base everything on the material; don't invent content that isn't related to it.\n` +
         `Reply with only JSON: {"title": "short lesson title", "blocks": [{"type": "h2" | "h3" | "p" | "ul" | "ol", "text": "for h2/h3/p", "items": ["for ul/ol"]}], ` +
         `"vocab": [{"da": "noun with en/et, verb with at", "en": "English", "example": "short Danish example sentence"}]}. At most 15 vocab items. Don't use em dashes.` +
