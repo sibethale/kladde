@@ -35,7 +35,7 @@ In **Settings**, pick an AI service. You can switch at any time.
 2. Click **Create API Key**, give it a name like `kladde`, and copy the key. It starts with `gsk_`.
 3. Open your Kladde site, click **Settings**, choose **Groq**, paste the key and click **Save**.
 
-Groq's free plan allows roughly 1,000 requests a day. Long notes and files are shortened before they're sent. Groq can't read photos with the default model, so upload PDF, Word or PowerPoint files instead.
+Groq's free plan allows roughly 1,000 requests a day. Long notes and files are shortened before they're sent. Groq and OpenRouter can't see photos, so Kladde reads the text out of a photo on your own device first (the first photo takes longer while the reader downloads) and sends only that text. Tables and handwriting can come out with mistakes. Claude looks at the photo directly, which is more accurate.
 
 ### Free: OpenRouter
 

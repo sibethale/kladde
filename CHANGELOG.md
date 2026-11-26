@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-26 (5)
+- Fixed: uploading a photo with Groq or OpenRouter ended in "Couldn't reach the AI service", because those AI services can't see photos. Now Kladde reads the Danish text out of the photo on your device (Tesseract OCR, loaded from the internet the first time) and sends only the text. With Claude, photos are still sent directly.
+- Changed: when the AI service reports a problem, the message now shows what it said instead of a wrong "check your connection" message.
+
 ## 2026-11-26 (4)
 - Fixed: in fill-in-the-blank exercises, a blank the AI left without an accepted answer could not be checked ("can't be checked automatically"). Now the app works the missing answer out from the full correct sentence, so those blanks turn green or red and the answer shows in bold.
 
